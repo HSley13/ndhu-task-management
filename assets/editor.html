@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>Editor</title>
+<!-- TipTap via CDN (loaded once and cached by WebView) -->
+<script src="https://cdn.jsdelivr.net/npm/@tiptap/core@2.4.0/dist/index.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tiptap/pm@2.4.0/dist/index.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tiptap/starter-kit@2.4.0/dist/index.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tiptap/extension-underline@2.4.0/dist/index.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tiptap/extension-image@2.4.0/dist/index.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tiptap/extension-task-list@2.4.0/dist/index.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tiptap/extension-task-item@2.4.0/dist/index.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:      #0A0A0F;
+    --surface: #111118;
+    --text:    #F0F0FF;
+    --text2:   #8888AA;
+    --text3:   #55556A;
+    --border:  #2A2A3D;
+    --accent:  #6C63FF;
+    --danger:  #FF4D6A;
+    --radius:  8px;
+  }
+  html, body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; height: 100%; }
+  body { display: flex; flex-direction: column; }
+
+  /* ── Editor area ─────────────────────────────────────────────────────────── */
+  #editor-wrap { flex: 1; overflow-y: auto; padding: 16px 16px 80px; }
+  .tiptap { outline: none; min-height: 100%; font-size: 16px; line-height: 1.7; color: var(--text); }
+  .tiptap p { margin-bottom: 0.5em; }
+  .tiptap h1 { font-size: 1.6em; font-weight: 700; margin-bottom: 0.4em; color: var(--text); }
+  .tiptap h2 { font-size: 1.3em; font-weight: 600; margin-bottom: 0.4em; color: var(--text); }
+  .tiptap h3 { font-size: 1.1em; font-weight: 600; margin-bottom: 0.4em; color: var(--text); }
+  .tiptap ul, .tiptap ol { padding-left: 1.4em; margin-bottom: 0.5em; }
+  .tiptap li { margin-bottom: 0.2em; }
+  .tiptap ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+  .tiptap ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 8px; }
+  .tiptap ul[data-type="taskList"] li > label { margin-top: 2px; cursor: pointer; }
+  .tiptap ul[data-type="taskList"] li > label input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+  .tiptap ul[data-type="taskList"] li[data-checked="true"] > div { text-decoration: line-through; opacity: 0.5; }
+  .tiptap blockquote { border-left: 3px solid var(--accent); padding-left: 12px; color: var(--text2); margin: 0.5em 0; }
+  .tiptap code { background: #1A1A2E; border-radius: 4px; padding: 2px 5px; font-family: 'Menlo', monospace; font-size: 0.9em; color: #A8B5FF; }
+  .tiptap pre { background: #1A1A2E; border-radius: var(--radius); padding: 12px; overflow-x: auto; margin: 0.5em 0; }
+  .tiptap pre code { background: none; padding: 0; }
+  .tiptap hr { border: none; border-top: 1px solid var(--border); margin: 1em 0; }
+  .tiptap strong { color: var(--text); }
+  .tiptap em { color: var(--text); }
+  .tiptap img { max-width: 100%; border-radius: var(--radius); margin: 8px 0; }
+  .tiptap .is-editor-empty:first-child::before { content: attr(data-placeholder); float: left; color: var(--text3); height: 0; pointer-events: none; }
+
+  /* ── Toolbar ─────────────────────────────────────────────────────────────── */
+  #toolbar {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    padding: 8px 10px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    position: sticky; bottom: 0;
+  }
+  .tb-group { display: flex; gap: 2px; }
+  .tb-sep { width: 1px; background: var(--border); margin: 4px 2px; align-self: stretch; }
+  .tb-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 6px; border: none;
+    background: transparent; color: var(--text2);
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.1s, color 0.1s;
+  }
+  .tb-btn:active, .tb-btn.active { background: var(--accent) + '33'; color: var(--accent); }
+  .tb-btn.active { background: rgba(108,99,255,0.2); color: var(--accent); }
+  .tb-btn svg { width: 18px; height: 18px; fill: currentColor; }
+</style>
+</head>
+<body>
+<div id="editor-wrap"><div id="editor"></div></div>
+<div id="toolbar">
+  <div class="tb-group">
+    <button class="tb-btn" id="btn-bold" title="Bold">
+      <svg viewBox="0 0 24 24"><path d="M13.5 15.5H10v-3h3.5a1.5 1.5 0 0 1 0 3zm-3.5-9h3a1.5 1.5 0 0 1 0 3H10V6.5zm5.33 3.86A3.5 3.5 0 0 0 13 4H8v16h5.5a3.5 3.5 0 0 0 1.83-6.46z"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-italic" title="Italic">
+      <svg viewBox="0 0 24 24"><path d="M10 4v3h2.21l-3.42 10H6v3h8v-3h-2.21l3.42-10H18V4z"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-underline" title="Underline">
+      <svg viewBox="0 0 24 24"><path d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-strike" title="Strikethrough">
+      <svg viewBox="0 0 24 24"><path d="M10 19h4v-3h-4v3zM5 4v3h5v3h4V7h5V4H5zM3 14h18v-2H3v2z"/></svg>
+    </button>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <button class="tb-btn" id="btn-h1" title="Heading 1">H1</button>
+    <button class="tb-btn" id="btn-h2" title="Heading 2">H2</button>
+    <button class="tb-btn" id="btn-h3" title="Heading 3">H3</button>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <button class="tb-btn" id="btn-bullet" title="Bullet list">
+      <svg viewBox="0 0 24 24"><path d="M4 10.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5 1.5-.67 1.5-1.5-.67-1.5-1.5-1.5zm0-6c-.83 0-1.5.67-1.5 1.5S3.17 7.5 4 7.5 5.5 6.83 5.5 6 4.83 4.5 4 4.5zm0 12c-.83 0-1.5.68-1.5 1.5s.68 1.5 1.5 1.5 1.5-.68 1.5-1.5-.67-1.5-1.5-1.5zM7 19h14v-2H7v2zm0-6h14v-2H7v2zm0-8v2h14V5H7z"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-ordered" title="Numbered list">
+      <svg viewBox="0 0 24 24"><path d="M2 17h2v.5H3v1h1v.5H2v1h3v-4H2v1zm1-9h1V4H2v1h1v3zm-1 3h1.8L2 13.1v.9h3v-1H3.2L5 10.9V10H2v1zm5-6v2h14V5H7zm0 14h14v-2H7v2zm0-6h14v-2H7v2z"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-tasklist" title="Task list (checklist)">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-blockquote" title="Blockquote">
+      <svg viewBox="0 0 24 24"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>
+    </button>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <button class="tb-btn" id="btn-undo" title="Undo">
+      <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-redo" title="Redo">
+      <svg viewBox="0 0 24 24"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 15c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 15h9V6l-3.6 4.6z"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-hr" title="Divider">—</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var editor = null;
+  var pendingContent = null;
+
+  function postMessage(type, payload) {
+    var msg = JSON.stringify({ type: type, payload: payload });
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(msg);
+    }
+  }
+
+  function initEditor(initialContent) {
+    var StarterKit = window.StarterKit || (window.tiptap && window.tiptap.StarterKit);
+    var Underline  = window.Underline  || (window.tiptap && window.tiptap.Underline);
+    var Image      = window.Image      || (window.tiptap && window.tiptap.Image);
+    var TaskList   = window.TaskList   || (window.tiptap && window.tiptap.TaskList);
+    var TaskItem   = window.TaskItem   || (window.tiptap && window.tiptap.TaskItem);
+    var Editor     = window.Editor     || (window.tiptap && window.tiptap.Editor);
+
+    if (!StarterKit || !Editor) { return; }
+
+    var extensions = [StarterKit];
+    if (Underline) extensions.push(Underline);
+    if (Image)     extensions.push(Image.configure({ inline: false, allowBase64: true }));
+    if (TaskList)  extensions.push(TaskList);
+    if (TaskItem)  extensions.push(TaskItem.configure({ nested: true }));
+
+    editor = new Editor({
+      element: document.getElementById('editor'),
+      extensions: extensions,
+      content: initialContent || '',
+      editorProps: {
+        attributes: {
+          class: 'tiptap',
+          'data-placeholder': 'Start writing…',
+        },
+      },
+      onUpdate: function () {
+        postMessage('content_change', { html: editor.getHTML() });
+      },
+      onSelectionUpdate: function () {
+        postMessage('selection_change', {
+          bold:       editor.isActive('bold'),
+          italic:     editor.isActive('italic'),
+          underline:  editor.isActive('underline'),
+          strike:     editor.isActive('strike'),
+          bulletList: editor.isActive('bulletList'),
+          orderedList: editor.isActive('orderedList'),
+          taskList:   editor.isActive('taskList'),
+          blockquote: editor.isActive('blockquote'),
+          h1:         editor.isActive('heading', { level: 1 }),
+          h2:         editor.isActive('heading', { level: 2 }),
+          h3:         editor.isActive('heading', { level: 3 }),
+        });
+      },
+    });
+
+    // Toolbar buttons
+    function addTb(id, action) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('click', function (e) { e.preventDefault(); action(); editor.commands.focus(); });
+    }
+    addTb('btn-bold',      function () { editor.chain().toggleBold().run(); });
+    addTb('btn-italic',    function () { editor.chain().toggleItalic().run(); });
+    addTb('btn-underline', function () { editor.chain().toggleUnderline().run(); });
+    addTb('btn-strike',    function () { editor.chain().toggleStrike().run(); });
+    addTb('btn-h1',        function () { editor.chain().toggleHeading({ level: 1 }).run(); });
+    addTb('btn-h2',        function () { editor.chain().toggleHeading({ level: 2 }).run(); });
+    addTb('btn-h3',        function () { editor.chain().toggleHeading({ level: 3 }).run(); });
+    addTb('btn-bullet',    function () { editor.chain().toggleBulletList().run(); });
+    addTb('btn-ordered',   function () { editor.chain().toggleOrderedList().run(); });
+    addTb('btn-tasklist',  function () { editor.chain().toggleTaskList().run(); });
+    addTb('btn-blockquote',function () { editor.chain().toggleBlockquote().run(); });
+    addTb('btn-undo',      function () { editor.chain().undo().run(); });
+    addTb('btn-redo',      function () { editor.chain().redo().run(); });
+    addTb('btn-hr',        function () { editor.chain().setHorizontalRule().run(); });
+
+    postMessage('ready', {});
+  }
+
+  // Message bridge from React Native
+  window.addEventListener('message', function (event) {
+    var data;
+    try { data = JSON.parse(event.data); } catch (e) { return; }
+    var type = data.type;
+    var payload = data.payload;
+
+    if (type === 'set_content') {
+      if (editor) {
+        editor.commands.setContent(payload.html || '');
+      } else {
+        pendingContent = payload.html || '';
+      }
+    } else if (type === 'insert_image') {
+      if (editor) editor.chain().setImage({ src: payload.src }).run();
+    } else if (type === 'get_content') {
+      if (editor) postMessage('content', { html: editor.getHTML() });
+    } else if (type === 'focus') {
+      if (editor) editor.commands.focus('end');
+    }
+  });
+
+  // Wait for TipTap scripts to load then init
+  function tryInit() {
+    var StarterKit = window.StarterKit || (window.tiptap && window.tiptap.StarterKit);
+    var Editor = window.Editor || (window.tiptap && window.tiptap.Editor);
+    if (StarterKit && Editor) {
+      initEditor(pendingContent || '');
+    } else {
+      setTimeout(tryInit, 100);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryInit);
+  } else {
+    tryInit();
+  }
+})();
+</script>
+</body>
+</html>
