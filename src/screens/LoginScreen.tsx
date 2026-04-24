@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet, Pressable, Keyboard,
-  KeyboardAvoidingView, Image,
+  KeyboardAvoidingView, Image, Platform, ScrollView,
 } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming, withSequence,
@@ -61,9 +61,14 @@ export function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior="padding"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
     >
-      <View style={styles.inner}>
+      <ScrollView
+        contentContainerStyle={styles.inner}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Logo area */}
         <Animated.View style={[styles.logoArea, logoStyle]}>
           <View style={styles.logoCircle}>
@@ -117,7 +122,7 @@ export function LoginScreen() {
         <Text style={styles.footer}>
           Uses your NDHU Moodle credentials. Your password is never stored.
         </Text>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -128,9 +133,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.base,
   },
   inner: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing[6],
+    paddingVertical: spacing[10],
     gap: spacing[8],
   },
   logoArea: {
