@@ -18,7 +18,7 @@ interface SettingsStore extends SettingsState {
 
 const DEFAULT_STATE: SettingsState = {
   lastSyncedAt: null,
-  defaultReminderOffsets: [-1440, -60],
+  defaultReminderOffsets: [0, -60, -1440],
   autoReminders: true,
 };
 

@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, StyleSheet, Pressable, Switch, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -32,6 +33,7 @@ function Row({ label, value, onPress, rightElement }: {
 
 export function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const { student_id: studentId, logout } = useAuthStore();
   const { autoReminders, setAutoReminders, lastSyncedAt } = useSettingsStore();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -56,7 +58,7 @@ export function SettingsScreen() {
         <Text style={styles.heading}>Settings</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[4] }]}>
         {/* Account */}
         <Text style={styles.section}>Account</Text>
         <View style={styles.card}>
@@ -120,7 +122,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing[4],
-    paddingBottom: 60,
     gap: spacing[3],
   },
   section: {

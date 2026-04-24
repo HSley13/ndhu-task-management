@@ -1,7 +1,7 @@
 import { useAuthStore } from '../store/useAuthStore';
 import type { RawAssignment } from '../types';
 
-const BASE_URL = process.env['EXPO_PUBLIC_API_URL'] ?? '';
+const BASE_URL = process.env['EXPO_PUBLIC_API_URL'] ?? 'https://ndhutaskmanagement.hslay13.online';
 
 export class ApiError extends Error {
   constructor(

@@ -1,12 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import Swipeable from 'react-native-gesture-handler/Swipeable';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import { Feather } from '@expo/vector-icons';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
 import { colors, spacing, radius, fontSize } from '../../theme';
 import { Checkbox } from '../ui/Checkbox';
 import { useTaskStore } from '../../store/useTaskStore';
@@ -21,30 +16,6 @@ interface TaskRowProps {
   onPostpone: () => void;
 }
 
-function LeftActions({ onPostpone, onDelete }: { onPostpone: () => void; onDelete: () => void }) {
-  return (
-    <View style={styles.leftActions}>
-      <Pressable style={[styles.action, styles.postponeAction]} onPress={onPostpone}>
-        <Feather name="clock" size={20} color="#fff" />
-        <Text style={styles.actionText}>Postpone</Text>
-      </Pressable>
-      <Pressable style={[styles.action, styles.deleteAction]} onPress={onDelete}>
-        <Feather name="trash-2" size={20} color="#fff" />
-        <Text style={styles.actionText}>Delete</Text>
-      </Pressable>
-    </View>
-  );
-}
-
-function RightActions({ isPinned, onTogglePin }: { isPinned: boolean; onTogglePin: () => void }) {
-  return (
-    <Pressable style={[styles.action, styles.pinAction]} onPress={onTogglePin}>
-      <Feather name={isPinned ? 'bookmark' : 'bookmark'} size={20} color="#fff" />
-      <Text style={styles.actionText}>{isPinned ? 'Unpin' : 'Pin'}</Text>
-    </Pressable>
-  );
-}
-
 export function TaskRow({ task, labels, onPress, onPostpone }: TaskRowProps) {
   const { toggleDone, togglePin, deleteTask } = useTaskStore();
   const haptics = useHaptics();
@@ -57,26 +28,25 @@ export function TaskRow({ task, labels, onPress, onPostpone }: TaskRowProps) {
     ? colors.danger
     : 'transparent';
 
-  function handleDelete() {
+  function handleLongPress() {
     haptics.medium();
-    deleteTask(task.id);
+    Alert.alert(
+      task.title,
+      undefined,
+      [
+        { text: task.is_pinned ? 'Unpin' : 'Pin', onPress: () => togglePin(task.id) },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteTask(task.id) },
+        { text: 'Cancel', style: 'cancel' },
+      ],
+    );
   }
 
   return (
-    <Swipeable
-      renderLeftActions={() => (
-        <LeftActions onPostpone={onPostpone} onDelete={handleDelete} />
-      )}
-      renderRightActions={() => (
-        <RightActions isPinned={task.is_pinned} onTogglePin={() => togglePin(task.id)} />
-      )}
-      overshootLeft={false}
-      overshootRight={false}
-    >
-      <Pressable
+      <TouchableOpacity
         style={[styles.row, { borderLeftColor: borderColor }]}
         onPress={onPress}
-        onLongPress={() => haptics.medium()}
+        onLongPress={handleLongPress}
+        activeOpacity={0.7}
       >
         <Checkbox
           checked={isDone}
@@ -123,8 +93,7 @@ export function TaskRow({ task, labels, onPress, onPostpone }: TaskRowProps) {
             <Feather name="link" size={12} color={colors.text.tertiary} />
           )}
         </View>
-      </Pressable>
-    </Swipeable>
+      </TouchableOpacity>
   );
 }
 
@@ -196,28 +165,5 @@ const styles = StyleSheet.create({
   labelChipText: {
     fontSize: 10,
     fontWeight: '500',
-  },
-  leftActions: {
-    flexDirection: 'row',
-  },
-  action: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 80,
-    gap: 4,
-  },
-  postponeAction: {
-    backgroundColor: colors.warning,
-  },
-  deleteAction: {
-    backgroundColor: colors.danger,
-  },
-  pinAction: {
-    backgroundColor: colors.accent.default,
-  },
-  actionText: {
-    color: '#fff',
-    fontSize: fontSize.xs,
-    fontWeight: '600',
   },
 });

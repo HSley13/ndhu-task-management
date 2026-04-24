@@ -2,11 +2,22 @@ import * as SQLite from 'expo-sqlite';
 import { SCHEMA } from './schema';
 
 let _db: SQLite.SQLiteDatabase | null = null;
+let _ready: Promise<SQLite.SQLiteDatabase> | null = null;
 
 export async function getDb(): Promise<SQLite.SQLiteDatabase> {
   if (_db) return _db;
-  _db = await SQLite.openDatabaseAsync('ndhu.db');
-  return _db;
+  if (_ready) return _ready;
+
+  _ready = (async () => {
+    const db = await SQLite.openDatabaseAsync('ndhu.db');
+    // Enable WAL for better concurrent read performance
+    await db.execAsync('PRAGMA journal_mode = WAL;');
+    await runMigrations(db);
+    _db = db;
+    return db;
+  })();
+
+  return _ready;
 }
 
 export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {

@@ -1,11 +1,11 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useCallback } from 'react';
 import {
-  View, Text, FlatList, StyleSheet, Pressable, TextInput,
+  View, Text, FlatList, StyleSheet, Pressable, TextInput, Keyboard, LayoutAnimation,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, radius, fontSize } from '../theme';
 import { EmptyState } from '../components/ui/EmptyState';
 
@@ -18,9 +18,36 @@ export function NotesScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<any>();
-  const { tasks, openTaskDetail } = useTaskStore();
+  const { tasks, openTaskDetail, togglePin } = useTaskStore();
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setSearchOpen(false);
+      setSearch('');
+      setSearchFocused(false);
+      Keyboard.dismiss();
+      searchInputRef.current?.blur();
+    }, []),
+  );
+
+  function openSearch() {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSearchOpen(true);
+    setTimeout(() => searchInputRef.current?.focus(), 50);
+  }
+
+  function closeSearch() {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSearchOpen(false);
+    setSearch('');
+    setSearchFocused(false);
+    Keyboard.dismiss();
+  }
 
   const notes = useMemo(() =>
     tasks
@@ -31,6 +58,7 @@ export function NotesScreen() {
         return t.title.toLowerCase().includes(q) || (t.note_content ?? '').toLowerCase().includes(q);
       })
       .sort((a, b) => {
+        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
         const da = new Date(a.updated_at).getTime();
         const db = new Date(b.updated_at).getTime();
         return db - da;
@@ -50,7 +78,16 @@ export function NotesScreen() {
       .replace(/\s+/g, ' ')
       .trim();
     return (
-      <Pressable style={styles.card} onPress={() => handleNotePress(item)}>
+      <Pressable
+        style={[styles.card, item.is_pinned && styles.cardPinned]}
+        onPress={() => handleNotePress(item)}
+        onLongPress={() => togglePin(item.id)}
+      >
+        {item.is_pinned && (
+          <View style={styles.pinBadge}>
+            <Feather name="bookmark" size={11} color={colors.accent.default} />
+          </View>
+        )}
         <Text style={styles.noteTitle} numberOfLines={1}>{item.title}</Text>
         {preview.length > 0 && (
           <Text style={styles.notePreview} numberOfLines={3}>{preview}</Text>
@@ -63,20 +100,35 @@ export function NotesScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.heading}>Notes</Text>
-      </View>
-
-      <View style={[styles.searchWrap, searchFocused && styles.searchWrapFocused]}>
-        <Feather name="search" size={16} color={searchFocused ? colors.accent.default : colors.text.tertiary} style={styles.searchIcon} />
-        <TextInput
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search notes…"
-          placeholderTextColor={colors.text.tertiary}
-          style={styles.searchInput}
-          onFocus={() => setSearchFocused(true)}
-          onBlur={() => setSearchFocused(false)}
-        />
+        {!searchOpen ? (
+          <>
+            <Text style={styles.heading}>Notes</Text>
+            <View style={{ flex: 1 }} />
+            <Pressable onPress={openSearch} hitSlop={8}>
+              <Feather name="search" size={22} color={colors.text.secondary} />
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <View style={[styles.searchWrap, searchFocused && styles.searchWrapFocused]}>
+              <Feather name="search" size={16} color={searchFocused ? colors.accent.default : colors.text.tertiary} style={styles.searchIcon} />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Search notes…"
+                placeholderTextColor={colors.text.tertiary}
+                ref={searchInputRef}
+                style={styles.searchInput}
+                autoFocus={false}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+              />
+            </View>
+            <Pressable onPress={closeSearch} hitSlop={8} style={styles.cancelBtn}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+          </>
+        )}
       </View>
 
       {notes.length === 0 ? (
@@ -93,8 +145,10 @@ export function NotesScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderNote}
           numColumns={2}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
           columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: tabBarHeight + spacing[8] }]}
         />
       )}
 
@@ -115,8 +169,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.base,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[2],
+    gap: spacing[2],
   },
   heading: {
     fontSize: 26,
@@ -125,14 +182,13 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   searchWrap: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: spacing[4],
-    marginBottom: spacing[3],
     backgroundColor: colors.bg.input,
     borderRadius: radius.md,
     paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
+    paddingVertical: spacing[2],
     borderWidth: 1,
     borderColor: colors.border.subtle,
   },
@@ -149,6 +205,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     lineHeight: 20,
     paddingVertical: 0,
+  },
+  cancelBtn: {
+    paddingLeft: spacing[3],
+  },
+  cancelText: {
+    color: colors.accent.default,
+    fontSize: fontSize.base,
   },
   list: {
     paddingHorizontal: spacing[2],
@@ -168,6 +231,14 @@ const styles = StyleSheet.create({
     gap: spacing[2],
     borderWidth: 1,
     borderColor: colors.border.subtle,
+  },
+  cardPinned: {
+    borderColor: colors.accent.default,
+  },
+  pinBadge: {
+    position: 'absolute',
+    top: spacing[2],
+    right: spacing[2],
   },
   noteTitle: {
     fontSize: fontSize.sm,

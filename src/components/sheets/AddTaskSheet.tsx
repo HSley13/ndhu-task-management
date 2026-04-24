@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, Platform, ScrollView, Alert,
 } from 'react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Feather } from '@expo/vector-icons';
 import { format, parseISO } from 'date-fns';
 import * as ImagePicker from 'expo-image-picker';
@@ -26,7 +26,7 @@ const NativeDatePicker: React.ComponentType<any> =
     : View;
 
 interface AddTaskSheetProps {
-  sheetRef: React.RefObject<BottomSheet | null>;
+  sheetRef: React.RefObject<BottomSheetModal | null>;
   initialDate?: string; // yyyy-MM-dd — pre-fills the due date when sheet opens
 }
 
@@ -100,14 +100,21 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
       for (const att of pendingAttachments) {
         await addAttachment(task.id, { ...att, task_id: task.id });
       }
-      for (const offset of pendingReminderOffsets) {
+      // If user didn't pick reminders manually, fall back to auto-defaults (when enabled and a due date is set)
+      const remindersToSchedule =
+        pendingReminderOffsets.length > 0
+          ? pendingReminderOffsets
+          : autoReminders && dueDate
+          ? defaultReminderOffsets
+          : [];
+      for (const offset of remindersToSchedule) {
         await addReminder(task.id, offset);
       }
       if (selectedLabels.length > 0) {
         await setTaskLabels(task.id, selectedLabels);
       }
       reset();
-      sheetRef.current?.close();
+      sheetRef.current?.dismiss();
     } finally {
       setLoading(false);
     }
@@ -153,9 +160,8 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
   }
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={sheetRef}
-      index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
@@ -381,7 +387,7 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
           style={styles.createBtn}
         />
       </BottomSheetScrollView>
-    </BottomSheet>
+    </BottomSheetModal>
   );
 }
 

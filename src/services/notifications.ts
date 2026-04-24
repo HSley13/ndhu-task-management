@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
-import { addMinutes, parseISO, setHours, setMinutes, setSeconds, startOfTomorrow, isBefore } from 'date-fns';
+import { addMinutes, isBefore } from 'date-fns';
 import { format, parse } from 'date-fns';
+import { Platform } from 'react-native';
 import { getDb } from '../db/client';
 import * as remindersDb from '../db/reminders';
 import * as tasksDb from '../db/tasks';
@@ -36,6 +37,8 @@ export async function scheduleRemindersForTask(
           body:
             `Due ${format(dueDate, 'MMM d \'at\' h:mm a')}` +
             (task.course ? ` · ${task.course}` : ''),
+          sound: true,
+          ...(Platform.OS === 'android' ? { channelId: 'task-reminders' } : {}),
           data: { task_id: task.id },
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },

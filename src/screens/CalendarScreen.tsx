@@ -1,12 +1,13 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Calendar } from 'react-native-calendars';
 import type { DateData } from 'react-native-calendars';
 import { format } from 'date-fns';
 import { Feather } from '@expo/vector-icons';
-import BottomSheet from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useTaskStore } from '../store/useTaskStore';
 import { useLabelStore } from '../store/useLabelStore';
 import { colors, spacing, radius, fontSize } from '../theme';
@@ -24,7 +25,7 @@ export function CalendarScreen({ navigation }: Props) {
   const { labels } = useLabelStore();
   const [selected, setSelected] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [showCreateMenu, setShowCreateMenu] = useState(false);
-  const addSheetRef = useRef<BottomSheet>(null);
+  const addSheetRef = useRef<BottomSheetModal>(null);
 
   // Build marked dates map
   const markedDates = useMemo(() => {
@@ -64,9 +65,9 @@ export function CalendarScreen({ navigation }: Props) {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.heading}>Calendar</Text>
-        <Pressable onPress={() => handleDayPress({ dateString: todayString } as DateData)}>
+        <TouchableOpacity onPress={() => handleDayPress({ dateString: todayString } as DateData)} activeOpacity={0.7}>
           <Text style={styles.todayBtn}>Today</Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
 
       <Calendar
@@ -94,12 +95,13 @@ export function CalendarScreen({ navigation }: Props) {
       />
 
       {/* FAB */}
-      <Pressable
+      <TouchableOpacity
         style={[styles.fab, { bottom: tabBarHeight + spacing[4] }]}
         onPress={() => setShowCreateMenu(true)}
+        activeOpacity={0.85}
       >
         <Feather name="plus" size={28} color="#fff" />
-      </Pressable>
+      </TouchableOpacity>
 
       {/* Create menu */}
       {showCreateMenu && (
@@ -110,7 +112,7 @@ export function CalendarScreen({ navigation }: Props) {
           <View style={[styles.createMenu, { bottom: tabBarHeight + spacing[4] + 64 }]}>
             <Pressable
               style={styles.menuItem}
-              onPress={() => { setShowCreateMenu(false); addSheetRef.current?.expand(); }}
+              onPress={() => { setShowCreateMenu(false); addSheetRef.current?.present(); }}
             >
               <View style={[styles.menuIcon, { backgroundColor: colors.accent.default }]}>
                 <Feather name="check-square" size={18} color="#fff" />
@@ -166,7 +168,6 @@ const styles = StyleSheet.create({
   },
   calendar: {
     borderRadius: radius.lg,
-    overflow: 'hidden',
     marginHorizontal: spacing[4],
   },
   fab: {

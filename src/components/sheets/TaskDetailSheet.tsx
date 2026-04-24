@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   View, Text, ScrollView, Pressable, TextInput, StyleSheet, Linking, Platform,
 } from 'react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Feather } from '@expo/vector-icons';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useLabelStore } from '../../store/useLabelStore';
@@ -27,7 +27,7 @@ const NativeDatePicker: React.ComponentType<any> =
     : View;
 
 interface TaskDetailSheetProps {
-  sheetRef: React.RefObject<BottomSheet | null>;
+  sheetRef: React.RefObject<BottomSheetModal | null>;
   onOpenNoteEditor: () => void;
 }
 
@@ -71,8 +71,6 @@ export function TaskDetailSheet({
     (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
     [],
   );
-
-  if (!task) return null;
 
   const taskLabels = allLabels.filter((l) =>
     task.labels?.some((tl: any) => tl.label_id === l.id || tl.id === l.id)
@@ -139,16 +137,17 @@ export function TaskDetailSheet({
 
   const activeReminderOffsets = (task.reminders ?? []).map((r) => r.offset_minutes);
 
+  if (!task) return null;
+
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={sheetRef}
-      index={-1}
       snapPoints={snapPoints}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBg}
       handleComponent={SheetHandle}
-      onClose={closeTaskDetail}
+      onDismiss={closeTaskDetail}
     >
       <BottomSheetScrollView contentContainerStyle={styles.content}>
         {/* Header: inline-editable title */}
@@ -434,7 +433,7 @@ export function TaskDetailSheet({
           />
         </View>
       </BottomSheetScrollView>
-    </BottomSheet>
+    </BottomSheetModal>
   );
 }
 
