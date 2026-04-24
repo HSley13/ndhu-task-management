@@ -1,8 +1,8 @@
 import React, { useRef, useMemo } from 'react';
 import {
-  View, Text, SectionList, StyleSheet, Pressable,
+  View, Text, SectionList, StyleSheet, Pressable, TouchableOpacity,
 } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { TouchableOpacity as GHTouchableOpacity } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { format, parseISO } from 'date-fns';
@@ -24,7 +24,7 @@ export function DayDetailScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { date } = route.params;
-  const { tasks, openTaskDetail } = useTaskStore();
+  const { tasks, openTaskDetail, openTask } = useTaskStore();
   const { labels } = useLabelStore();
   const detailSheetRef = useRef<BottomSheetModal>(null);
   const addSheetRef = useRef<BottomSheetModal>(null);
@@ -45,9 +45,9 @@ export function DayDetailScreen({ route, navigation }: Props) {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
+        <GHTouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
           <Feather name="chevron-left" size={26} color={colors.text.secondary} />
-        </TouchableOpacity>
+        </GHTouchableOpacity>
         <Text style={styles.date}>{displayDate}</Text>
         <View style={{ width: 26 }} />
       </View>
@@ -90,7 +90,10 @@ export function DayDetailScreen({ route, navigation }: Props) {
 
       <TaskDetailSheet
         sheetRef={detailSheetRef}
-        onOpenNoteEditor={() => {}}
+        onOpenNoteEditor={() => {
+          detailSheetRef.current?.dismiss();
+          if (openTask) navigation.navigate('NoteEditor', { taskId: openTask.id });
+        }}
       />
       <AddTaskSheet sheetRef={addSheetRef} initialDate={date} />
     </View>
@@ -131,6 +134,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
-    elevation: 8,
+    elevation: 12,
+    zIndex: 100,
   },
 });

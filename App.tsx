@@ -5,8 +5,8 @@ import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { NavigationContainer } from '@react-navigation/native';
-import * as Notifications from 'expo-notifications';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Notifications } from './src/services/notificationsShim';
 
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { ToastProvider } from './src/hooks/useToast';
@@ -17,7 +17,7 @@ import { useSettingsStore } from './src/store/useSettingsStore';
 import { rescheduleAllReminders } from './src/services/notifications';
 import { colors } from './src/theme';
 
-// Configure notification handler (shown while app is foregrounded)
+// Configure notification handler and Android channel
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -28,7 +28,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Android: create a high-importance channel with sound + vibration
 if (Platform.OS === 'android') {
   Notifications.setNotificationChannelAsync('task-reminders', {
     name: 'Task Reminders',
@@ -48,24 +47,24 @@ function AppInner() {
 
   useEffect(() => {
     // Request notification permissions
-    Notifications.requestPermissionsAsync().catch(() => { });
+    Notifications.requestPermissionsAsync().catch(() => {});
 
+    // Navigate to task when notification is tapped
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const taskId = response.notification.request.content.data?.['task_id'] as string | undefined;
+      if (taskId) useTaskStore.getState().openTaskDetail(taskId);
+    });
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
     // Bootstrap
     (async () => {
       await _loadFromStorage();
       await restoreSession();
       await Promise.all([loadTasks(), loadLabels()]);
-      rescheduleAllReminders().catch(() => { });
+      rescheduleAllReminders().catch(() => {});
     })();
-
-    // Notification response listener — navigate to task when tapped
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const taskId = response.notification.request.content.data?.['task_id'] as string | undefined;
-      if (taskId) {
-        useTaskStore.getState().openTaskDetail(taskId);
-      }
-    });
-    return () => sub.remove();
   }, []);
 
   return (

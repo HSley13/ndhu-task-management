@@ -1,8 +1,7 @@
 import React, { useRef, useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, SectionList, StyleSheet, Pressable, TextInput, Keyboard, LayoutAnimation, Platform,
+  View, Text, SectionList, StyleSheet, Pressable, TextInput, Keyboard, LayoutAnimation, Platform, TouchableOpacity,
 } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import Animated, { useSharedValue } from 'react-native-reanimated';
@@ -208,7 +207,10 @@ export function ListScreen() {
       {/* Sheets */}
       <TaskDetailSheet
         sheetRef={detailSheetRef}
-        onOpenNoteEditor={() => { if (openTask) navigation.navigate('NoteEditor', { taskId: openTask.id }); }}
+        onOpenNoteEditor={() => {
+          detailSheetRef.current?.dismiss();
+          if (openTask) navigation.navigate('NoteEditor', { taskId: openTask.id });
+        }}
       />
       <AddTaskSheet sheetRef={addSheetRef} />
     </View>

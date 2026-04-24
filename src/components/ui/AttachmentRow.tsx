@@ -1,57 +1,108 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, Pressable, Image, StyleSheet,
-  Modal, Dimensions, ActivityIndicator,
+  View, Text, Pressable, Image, StyleSheet, Modal,
+  Dimensions, ActivityIndicator, Platform, Linking, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { WebView } from 'react-native-webview';
+import * as FileSystem from 'expo-file-system';
 import { colors, spacing, radius, fontSize } from '../../theme';
 import type { Attachment } from '../../types';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-// ── In-app file viewer modal (WebView, direct file:// for local files) ───────
-function FileViewerModal({ uri, name, visible, onClose }: { uri: string; name: string; visible: boolean; onClose: () => void }) {
+// ── Resolve the WebView source for the in-app viewer ────────────────────────
+//
+//   iOS / web  – WKWebView / browser renders file:// and https:// natively.
+//   Android + remote URL – Google Docs Viewer renders inline (no share sheet).
+//   Android + local file – handled outside this function via getContentUriAsync.
+//
+async function resolveViewerSource(
+  uri: string,
+): Promise<{ uri?: string; html?: string }> {
+  if (Platform.OS !== 'android') {
+    // iOS / web – WebView handles everything natively
+    return { uri };
+  }
+  // Android remote: Google Docs Viewer renders PDF/Office inline
+  const encoded = encodeURIComponent(uri);
+  return { uri: `https://docs.google.com/gview?embedded=true&url=${encoded}` };
+}
+
+// ── Open a local file on Android using the OS native viewer ──────────────────
+// getContentUriAsync converts file:// → content:// (via FileProvider).
+// Linking.openURL then fires Android's VIEW intent, which opens the file
+// directly in the registered default app (e.g. Google PDF Viewer) with no
+// share sheet.
+async function openLocalFileOnAndroid(uri: string): Promise<void> {
+  const contentUri = await FileSystem.getContentUriAsync(uri);
+  const canOpen = await Linking.canOpenURL(contentUri);
+  if (canOpen) {
+    await Linking.openURL(contentUri);
+  } else {
+    Alert.alert('No app found', 'No app is installed that can open this file type.');
+  }
+}
+
+// ── In-app file viewer modal ──────────────────────────────────────────────────
+function FileViewerModal({
+  uri, name, visible, onClose,
+}: {
+  uri: string; name: string; visible: boolean; onClose: () => void;
+}) {
+  const [source, setSource] = useState<{ uri?: string; html?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
-  // Reset state when the modal opens with a new file
   useEffect(() => {
-    if (visible) { setLoading(true); setLoadError(false); }
+    if (!visible) return;
+    setLoading(true);
+    setLoadError(false);
+    setSource(null);
+    resolveViewerSource(uri).then(setSource);
   }, [uri, visible]);
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }}>
-        <View style={fileViewStyles.header}>
-          <Text style={fileViewStyles.title} numberOfLines={1}>{name}</Text>
-          <Pressable onPress={onClose} hitSlop={12} style={fileViewStyles.closeBtn}>
+        {/* Header */}
+        <View style={fvStyles.header}>
+          <Text style={fvStyles.title} numberOfLines={1}>{name}</Text>
+          <Pressable onPress={onClose} hitSlop={12} style={fvStyles.closeBtn}>
             <Feather name="x" size={22} color="#fff" />
           </Pressable>
         </View>
-        {loading && !loadError && (
-          <View style={fileViewStyles.loadingOverlay}>
+
+        {/* Loading overlay */}
+        {(loading || !source) && !loadError && (
+          <View style={fvStyles.center}>
             <ActivityIndicator size="large" color={colors.accent.default} />
+            <Text style={fvStyles.loadingText}>Loading…</Text>
           </View>
         )}
+
+        {/* Error */}
         {loadError && (
-          <View style={fileViewStyles.errorBox}>
+          <View style={fvStyles.center}>
             <Feather name="alert-circle" size={32} color={colors.text.tertiary} />
-            <Text style={fileViewStyles.errorText}>Unable to open this file.</Text>
+            <Text style={fvStyles.errorText}>Unable to open this file.</Text>
           </View>
         )}
-        {!loadError && (
+
+        {/* WebView */}
+        {source && !loadError && (
           <WebView
-            source={{ uri }}
-            style={{ flex: 1 }}
-            originWhitelist={['*', 'file://*']}
+            source={source as any}
+            style={[{ flex: 1 }, (loading || !source) && { opacity: 0 }]}
+            originWhitelist={['*']}
             allowFileAccess
-            allowUniversalAccessFromFileURLs
             allowFileAccessFromFileURLs
+            allowUniversalAccessFromFileURLs
             onLoadEnd={() => setLoading(false)}
             onError={() => { setLoading(false); setLoadError(true); }}
+            onHttpError={() => { setLoading(false); setLoadError(true); }}
           />
         )}
       </SafeAreaView>
@@ -59,7 +110,7 @@ function FileViewerModal({ uri, name, visible, onClose }: { uri: string; name: s
   );
 }
 
-const fileViewStyles = StyleSheet.create({
+const fvStyles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -84,23 +135,23 @@ const fileViewStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  loadingOverlay: {
+  center: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  errorBox: {
-    flex: 1,
+    backgroundColor: '#111',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[3],
-    backgroundColor: '#000',
+    zIndex: 10,
+  },
+  loadingText: {
+    color: colors.text.tertiary,
+    fontSize: fontSize.sm,
   },
   errorText: {
     color: colors.text.tertiary,
     fontSize: fontSize.sm,
+    textAlign: 'center',
+    paddingHorizontal: spacing[6],
   },
 });
 
@@ -288,9 +339,31 @@ function ImageRow({ attachment, onDelete }: Props) {
   );
 }
 
-// ── File row (icon + tap to open in-app viewer) ──────────────────────────────
+// ── File row (icon + tap to open) ────────────────────────────────────────────
 function FileRow({ attachment, onDelete }: Props) {
   const [viewerVisible, setViewerVisible] = useState(false);
+  const [opening, setOpening] = useState(false);
+
+  const isLocal = attachment.uri.startsWith('file://') || attachment.uri.startsWith('/');
+
+  async function handleOpen() {
+    if (Platform.OS === 'android' && isLocal) {
+      // Android WebView has no PDF plugin — open directly in the device's
+      // native viewer (e.g. Google PDF Viewer) via Android VIEW intent.
+      if (opening) return;
+      setOpening(true);
+      try {
+        await openLocalFileOnAndroid(attachment.uri);
+      } catch {
+        Alert.alert('Error', 'Could not open the file.');
+      } finally {
+        setOpening(false);
+      }
+    } else {
+      setViewerVisible(true);
+    }
+  }
+
   return (
     <>
       <FileViewerModal
@@ -299,14 +372,19 @@ function FileRow({ attachment, onDelete }: Props) {
         visible={viewerVisible}
         onClose={() => setViewerVisible(false)}
       />
-      <Pressable style={styles.row} onPress={() => setViewerVisible(true)}>
+      <Pressable style={styles.row} onPress={handleOpen}>
         <View style={styles.fileIconWrap}>
-          <Feather name={fileIcon(attachment.mime_type)} size={18} color={colors.accent.default} />
+          <Feather
+            name={fileIcon(attachment.mime_type)}
+            size={18}
+            color={opening ? colors.text.tertiary : colors.accent.default}
+          />
         </View>
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>{attachment.name}</Text>
           <Text style={styles.meta}>
-            {attachment.size_bytes > 0 ? formatBytes(attachment.size_bytes) + ' · ' : ''}Tap to open
+            {attachment.size_bytes > 0 ? formatBytes(attachment.size_bytes) + ' · ' : ''}
+            {opening ? 'Opening…' : 'Tap to open'}
           </Text>
         </View>
         <Feather name="maximize-2" size={14} color={colors.text.tertiary} style={{ marginRight: 2 }} />

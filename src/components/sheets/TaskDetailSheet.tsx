@@ -73,7 +73,7 @@ export function TaskDetailSheet({
   );
 
   const taskLabels = allLabels.filter((l) =>
-    task.labels?.some((tl: any) => tl.label_id === l.id || tl.id === l.id)
+    task?.labels?.some((tl: any) => tl.label_id === l.id || tl.id === l.id)
   );
 
   // Auto-save helpers
@@ -135,7 +135,7 @@ export function TaskDetailSheet({
     if (task!.moodle_url) Linking.openURL(task!.moodle_url);
   }
 
-  const activeReminderOffsets = (task.reminders ?? []).map((r) => r.offset_minutes);
+  const activeReminderOffsets = (task?.reminders ?? []).map((r) => r.offset_minutes);
 
   if (!task) return null;
 

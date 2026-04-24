@@ -1,4 +1,3 @@
-import * as Notifications from 'expo-notifications';
 import { addMinutes, isBefore } from 'date-fns';
 import { format, parse } from 'date-fns';
 import { Platform } from 'react-native';
@@ -6,6 +5,7 @@ import { getDb } from '../db/client';
 import * as remindersDb from '../db/reminders';
 import * as tasksDb from '../db/tasks';
 import type { Task, Reminder } from '../types';
+import { Notifications } from './notificationsShim';
 
 function buildDueDate(task: Task): Date | null {
   if (!task.due_date) return null;
@@ -19,6 +19,8 @@ export async function scheduleRemindersForTask(
   task: Task,
   offsets: number[],
 ): Promise<Reminder[]> {
+  if (!Notifications) return [];
+
   const dueDate = buildDueDate(task);
   if (!dueDate) return [];
 
@@ -64,16 +66,16 @@ export async function cancelRemindersForTask(task_id: string): Promise<void> {
   const db = await getDb();
   const reminders = await remindersDb.getRemindersForTask(db, task_id);
   for (const r of reminders) {
-    if (r.expo_notification_id) {
-      await Notifications.cancelScheduledNotificationAsync(r.expo_notification_id).catch(
-        () => undefined,
-      );
+    if (r.expo_notification_id && Notifications) {
+      await Notifications.cancelScheduledNotificationAsync(r.expo_notification_id).catch(() => undefined);
     }
   }
   await remindersDb.deleteRemindersForTask(db, task_id);
 }
 
 export async function rescheduleAllReminders(): Promise<void> {
+  if (!Notifications) return;
+
   await Notifications.cancelAllScheduledNotificationsAsync();
 
   const db = await getDb();

@@ -209,8 +209,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const { openTask } = get();
     const reminder = openTask?.reminders.find((r) => r.id === reminder_id);
     if (reminder?.expo_notification_id) {
-      const Notifications = await import('expo-notifications');
-      await Notifications.cancelScheduledNotificationAsync(reminder.expo_notification_id);
+      const { Notifications } = await import('../services/notificationsShim');
+      await Notifications?.cancelScheduledNotificationAsync(reminder.expo_notification_id);
     }
     await remindersDb.deleteRemindersForTask(db, reminder_id);
     set((s) => {

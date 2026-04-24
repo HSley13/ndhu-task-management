@@ -63,16 +63,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // Sync assignments in background
       const { syncAssignments } = await import('../services/sync');
       syncAssignments(jwt).catch((err) => console.warn('[auth] syncAssignments error:', err));
-
-      // Register push token if available (best-effort, non-fatal)
-      try {
-        const Notifications = await import('expo-notifications');
-        const tokenData = await Notifications.getExpoPushTokenAsync();
-        const { registerPushToken } = await import('../services/api');
-        await registerPushToken(jwt, tokenData.data);
-      } catch (pushErr) {
-        console.warn('[auth] push token registration skipped:', (pushErr as Error).message);
-      }
     } catch (e) {
       const msg = (e as Error).message;
       console.error('[auth] login error:', msg, e);

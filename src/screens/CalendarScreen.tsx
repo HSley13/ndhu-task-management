@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import { View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
+import { TouchableOpacity as GHTouchableOpacity } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Calendar } from 'react-native-calendars';
@@ -65,34 +65,34 @@ export function CalendarScreen({ navigation }: Props) {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.heading}>Calendar</Text>
-        <TouchableOpacity onPress={() => handleDayPress({ dateString: todayString } as DateData)} activeOpacity={0.7}>
+        <GHTouchableOpacity onPress={() => handleDayPress({ dateString: todayString } as DateData)} activeOpacity={0.7}>
           <Text style={styles.todayBtn}>Today</Text>
-        </TouchableOpacity>
+        </GHTouchableOpacity>
       </View>
 
       <Calendar
-        current={todayString}
-        onDayPress={handleDayPress}
-        markingType="multi-dot"
-        markedDates={markedDates}
-        theme={{
-          backgroundColor: colors.bg.base,
-          calendarBackground: colors.bg.base,
-          textSectionTitleColor: colors.text.tertiary,
-          dayTextColor: colors.text.primary,
-          todayTextColor: colors.accent.default,
-          selectedDayBackgroundColor: colors.accent.muted,
-          selectedDayTextColor: colors.accent.default,
-          monthTextColor: colors.text.primary,
-          arrowColor: colors.accent.default,
-          dotColor: colors.accent.default,
-          textDisabledColor: colors.text.tertiary,
-          textDayFontSize: fontSize.base,
-          textMonthFontSize: fontSize.md,
-          textDayHeaderFontSize: fontSize.xs,
-        }}
-        style={styles.calendar}
-      />
+          current={todayString}
+          onDayPress={handleDayPress}
+          markingType="multi-dot"
+          markedDates={markedDates}
+          theme={{
+            backgroundColor: colors.bg.base,
+            calendarBackground: colors.bg.base,
+            textSectionTitleColor: colors.text.tertiary,
+            dayTextColor: colors.text.primary,
+            todayTextColor: colors.accent.default,
+            selectedDayBackgroundColor: colors.accent.muted,
+            selectedDayTextColor: colors.accent.default,
+            monthTextColor: colors.text.primary,
+            arrowColor: colors.accent.default,
+            dotColor: colors.accent.default,
+            textDisabledColor: colors.text.tertiary,
+            textDayFontSize: fontSize.base,
+            textMonthFontSize: fontSize.md,
+            textDayHeaderFontSize: fontSize.xs,
+          }}
+          style={[styles.calendar]}
+        />
 
       {/* FAB */}
       <TouchableOpacity
@@ -183,7 +183,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
-    elevation: 8,
+    elevation: 12,
+    zIndex: 100,
   },
   menuOverlay: {
     ...StyleSheet.absoluteFillObject,
