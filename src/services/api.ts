@@ -1,5 +1,6 @@
 import { useAuthStore } from '../store/useAuthStore';
 import type { RawAssignment } from '../types';
+import { encryptPassword } from './cryptoUtils';
 
 const BASE_URL = process.env['EXPO_PUBLIC_API_URL'] ?? 'https://ndhutaskmanagement.hslay13.online';
 
@@ -58,10 +59,11 @@ export async function login(
   student_id: string,
   password: string,
 ): Promise<{ jwt: string; assignments: RawAssignment[] }> {
+  const { encrypted_key, encrypted_password } = await encryptPassword(password);
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ student_id, password }),
+    body: JSON.stringify({ student_id, encrypted_key, encrypted_password }),
   });
 
   if (res.status === 400) {
