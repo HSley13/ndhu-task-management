@@ -59,7 +59,7 @@ export async function login(
   student_id: string,
   password: string,
 ): Promise<{ jwt: string; assignments: RawAssignment[] }> {
-  const { encrypted_key, encrypted_password } = await encryptPassword(password);
+  const { encrypted_key, encrypted_password } = encryptPassword(password);
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

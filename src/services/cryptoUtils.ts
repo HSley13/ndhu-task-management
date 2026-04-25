@@ -9,9 +9,10 @@
  *   decrypt_rsa(encrypted_key) → aes_key
  *   decrypt(encrypted_password, aes_key) → password
  *
- * Uses the Web Crypto API (crypto.subtle), available in React Native ≥ 0.73
- * with Hermes and in all modern browsers.
+ * Uses node-forge (pure JS) so it works in Expo Go / Hermes without any
+ * native crypto modules or WebCrypto polyfills.
  */
+import forge from 'node-forge';
 
 const SERVER_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6ldFpZ1SPrNucQN+JoHx
@@ -24,85 +25,45 @@ BwIDAQAB
 -----END PUBLIC KEY-----`;
 
 /**
- * Converts a PEM-encoded public key to an ArrayBuffer (SPKI DER bytes).
- */
-function pemToArrayBuffer(pem: string): ArrayBuffer {
-  const base64 = pem
-    .replace(/-----BEGIN PUBLIC KEY-----/, '')
-    .replace(/-----END PUBLIC KEY-----/, '')
-    .replace(/\s+/g, '');
-  const binary = atob(base64);
-  const buf = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    buf[i] = binary.charCodeAt(i);
-  }
-  return buf.buffer;
-}
-
-/**
- * Encodes a Uint8Array (or ArrayBuffer) to a base64 string.
- */
-function toBase64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-}
-
-/**
  * Encrypts a password for transit using RSA-OAEP + AES-GCM hybrid encryption.
  *
  * @returns Object with `encrypted_key` and `encrypted_password`, both base64-encoded,
  *          ready to be sent to POST /auth/login in place of a plaintext password.
  */
-export async function encryptPassword(password: string): Promise<{
+export function encryptPassword(password: string): {
   encrypted_key: string;
   encrypted_password: string;
-}> {
-  const subtle = crypto.subtle;
+} {
+  // Load the server RSA public key
+  const publicKey = forge.pki.publicKeyFromPem(SERVER_PUBLIC_KEY_PEM);
 
-  // Import the server RSA public key
-  const rsaKey = await subtle.importKey(
-    'spki',
-    pemToArrayBuffer(SERVER_PUBLIC_KEY_PEM),
-    { name: 'RSA-OAEP', hash: 'SHA-256' },
-    false,
-    ['encrypt'],
-  );
+  // Generate a random 32-byte AES-256 key
+  const aesKeyBytes = forge.random.getBytesSync(32);
 
-  // Generate a random AES-256 key (exportable so we can encrypt and send its raw bytes)
-  const aesKey = await subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt'],
-  );
-
-  // Export the AES key as raw bytes
-  const rawAesKey = await subtle.exportKey('raw', aesKey);
-
-  // RSA-OAEP-encrypt the AES key with the server's public key
-  const encryptedKey = await subtle.encrypt({ name: 'RSA-OAEP' }, rsaKey, rawAesKey);
+  // RSA-OAEP-SHA256-encrypt the AES key
+  const encryptedKeyBytes = publicKey.encrypt(aesKeyBytes, 'RSA-OAEP', {
+    md: forge.md.sha256.create(),
+    mgf1: { md: forge.md.sha256.create() },
+  });
 
   // Generate a random 12-byte IV for AES-GCM
-  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const iv = forge.random.getBytesSync(12);
 
-  // AES-GCM-encrypt the password; WebCrypto output is ciphertext‖tag (tag = last 16 bytes)
-  const passwordBytes = new TextEncoder().encode(password);
-  const aesCiphertext = await subtle.encrypt(
-    { name: 'AES-GCM', iv, tagLength: 128 },
-    aesKey,
-    passwordBytes,
-  );
+  // AES-GCM-encrypt the password (UTF-8 bytes)
+  const cipher = forge.cipher.createCipher('AES-GCM', aesKeyBytes);
+  cipher.start({ iv, tagLength: 128 });
+  cipher.update(forge.util.createBuffer(password, 'utf8'));
+  cipher.finish();
 
-  // Pack as iv(12)‖ciphertext‖tag — matches the server's decrypt() format
-  const payload = new Uint8Array(iv.length + aesCiphertext.byteLength);
-  payload.set(iv, 0);
-  payload.set(new Uint8Array(aesCiphertext), iv.length);
+  const ciphertext = cipher.output.getBytes();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tag = (cipher.mode as any).tag.getBytes() as string;
+
+  // Pack as iv(12)‖ciphertext‖tag(16) — matches the server's decrypt() format
+  const payload = iv + ciphertext + tag;
 
   return {
-    encrypted_key: toBase64(encryptedKey),
-    encrypted_password: toBase64(payload.buffer),
+    encrypted_key: forge.util.encode64(encryptedKeyBytes),
+    encrypted_password: forge.util.encode64(payload),
   };
 }
