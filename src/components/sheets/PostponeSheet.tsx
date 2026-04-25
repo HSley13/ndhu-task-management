@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Modal, View, Text, Pressable, StyleSheet, Platform, TextInput,
+  Modal, View, Text, Pressable, StyleSheet, Platform,
   KeyboardAvoidingView, ScrollView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -128,34 +128,32 @@ export function PostponeSheet({ visible, onClose, taskId }: PostponeModalProps) 
                     />
                   ) : (
                     <View style={styles.webPickerRow}>
-                      <TextInput
-                        // @ts-ignore
-                        type="date"
-                        value={customDate ? format(customDate, 'yyyy-MM-dd') : ''}
-                        onChangeText={(v) => {
-                          if (v) {
+                      {React.createElement('input', {
+                        type: 'date',
+                        value: customDate ? format(customDate, 'yyyy-MM-dd') : '',
+                        onChange: (e: any) => {
+                          if (e.target.value) {
                             const d = customDate ?? new Date();
-                            const parsed = parseISO(v);
+                            const parsed = parseISO(e.target.value);
                             parsed.setHours(d.getHours(), d.getMinutes(), 0, 0);
                             setCustomDate(parsed);
                           }
-                        }}
-                        style={styles.webDateInput}
-                      />
-                      <TextInput
-                        // @ts-ignore
-                        type="time"
-                        value={customDate ? format(customDate, 'HH:mm') : ''}
-                        onChangeText={(v) => {
-                          if (v) {
+                        },
+                        style: { colorScheme: 'dark', flex: 1, color: colors.text.primary, background: colors.bg.elevated, border: `1px solid ${colors.border.default}`, borderRadius: `${radius.md}px`, padding: `${spacing[2]}px ${spacing[3]}px`, fontSize: `${fontSize.sm}px`, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' },
+                      })}
+                      {React.createElement('input', {
+                        type: 'time',
+                        value: customDate ? format(customDate, 'HH:mm') : '',
+                        onChange: (e: any) => {
+                          if (e.target.value) {
                             const d = customDate ? new Date(customDate) : new Date();
-                            const [h, m] = v.split(':').map(Number);
+                            const [h, m] = e.target.value.split(':').map(Number);
                             d.setHours(h, m, 0, 0);
                             setCustomDate(d);
                           }
-                        }}
-                        style={styles.webDateInput}
-                      />
+                        },
+                        style: { colorScheme: 'dark', flex: 1, color: colors.text.primary, background: colors.bg.elevated, border: `1px solid ${colors.border.default}`, borderRadius: `${radius.md}px`, padding: `${spacing[2]}px ${spacing[3]}px`, fontSize: `${fontSize.sm}px`, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' },
+                      })}
                     </View>
                   )}
                   <View style={styles.customActions}>

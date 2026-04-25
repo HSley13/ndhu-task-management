@@ -287,16 +287,12 @@ export function TaskDetailSheet({
             textColor="#FFFFFF"
           />
         )}
-        {showDatePicker && Platform.OS === 'web' && (
-          <TextInput
-            // @ts-ignore
-            type="date"
-            value={dueDateVal ? format(dueDateVal, 'yyyy-MM-dd') : ''}
-            onChangeText={(v) => { setShowDatePicker(false); if (v) saveDueDate(parseISO(v)); }}
-            style={styles.webDateInput}
-            autoFocus
-          />
-        )}
+        {showDatePicker && Platform.OS === 'web' && React.createElement('input', {
+          type: 'date',
+          value: dueDateVal ? format(dueDateVal, 'yyyy-MM-dd') : '',
+          onChange: (e: any) => { setShowDatePicker(false); if (e.target.value) saveDueDate(parseISO(e.target.value)); },
+          style: { colorScheme: 'dark', color: colors.text.primary, background: colors.bg.elevated, border: `1px solid ${colors.border.default}`, borderRadius: `${radius.md}px`, padding: `${spacing[2]}px ${spacing[3]}px`, fontSize: `${fontSize.sm}px`, outline: 'none', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' },
+        })}
         {showTimePicker && Platform.OS !== 'web' && (
           <NativeDatePicker
             value={dueTimeVal ?? new Date()}
@@ -306,24 +302,20 @@ export function TaskDetailSheet({
             textColor="#FFFFFF"
           />
         )}
-        {showTimePicker && Platform.OS === 'web' && (
-          <TextInput
-            // @ts-ignore
-            type="time"
-            value={dueTimeVal ? format(dueTimeVal, 'HH:mm') : ''}
-            onChangeText={(v) => {
-              setShowTimePicker(false);
-              if (v) {
-                const d = dueDateVal ? new Date(dueDateVal) : new Date();
-                const [h, m] = v.split(':').map(Number);
-                d.setHours(h, m, 0, 0);
-                saveDueTime(d);
-              }
-            }}
-            style={styles.webDateInput}
-            autoFocus
-          />
-        )}
+        {showTimePicker && Platform.OS === 'web' && React.createElement('input', {
+          type: 'time',
+          value: dueTimeVal ? format(dueTimeVal, 'HH:mm') : '',
+          onChange: (e: any) => {
+            setShowTimePicker(false);
+            if (e.target.value) {
+              const d = dueDateVal ? new Date(dueDateVal) : new Date();
+              const [h, m] = e.target.value.split(':').map(Number);
+              d.setHours(h, m, 0, 0);
+              saveDueTime(d);
+            }
+          },
+          style: { colorScheme: 'dark', color: colors.text.primary, background: colors.bg.elevated, border: `1px solid ${colors.border.default}`, borderRadius: `${radius.md}px`, padding: `${spacing[2]}px ${spacing[3]}px`, fontSize: `${fontSize.sm}px`, outline: 'none', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' },
+        })}
 
         <Divider />
 
@@ -446,6 +438,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing[4],
     paddingBottom: 48,
+    ...Platform.select({ web: { maxWidth: 600, alignSelf: 'center' as const, width: '100%' } }),
   },
   header: {
     flexDirection: 'row',

@@ -24,6 +24,7 @@ export function NoteEditorScreen() {
 
   const { openTask, updateTask, addAttachment, deleteAttachment, openTaskDetail, addTask } = useTaskStore();
   const webViewRef = useRef<WebView>(null);
+  const iframeRef  = useRef<any>(null); // web only
 
   const [title, setTitle] = useState('');
   const [editorReady, setEditorReady] = useState(false);
@@ -54,9 +55,13 @@ export function NoteEditorScreen() {
 
   const sendToEditor = useCallback((type: string, payload: Record<string, unknown>) => {
     const msg = JSON.stringify({ type, payload });
-    webViewRef.current?.injectJavaScript(
-      `window.dispatchEvent(new MessageEvent('message',{data:${JSON.stringify(msg)}}));true;`
-    );
+    if (Platform.OS === 'web') {
+      iframeRef.current?.contentWindow?.postMessage(msg, '*');
+    } else {
+      webViewRef.current?.injectJavaScript(
+        `window.dispatchEvent(new MessageEvent('message',{data:${JSON.stringify(msg)}}));true;`
+      );
+    }
   }, []);
 
   const onMessage = useCallback((event: { nativeEvent: { data: string } }) => {
@@ -67,17 +72,38 @@ export function NoteEditorScreen() {
     } catch {}
   }, [onEditorReady]);
 
+  // Web: receive messages from the <iframe> via window.postMessage
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const handler = (event: MessageEvent) => {
+      try {
+        const { type, payload } = JSON.parse(event.data as string);
+        if (type === 'ready') onEditorReady();
+        if (type === 'content_change') htmlRef.current = payload.html ?? '';
+      } catch {}
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).addEventListener('message', handler);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return () => (window as any).removeEventListener('message', handler);
+  }, [onEditorReady]);
+
   function handleSave() {
     setSaving(true);
-    // Flush absolute latest innerHTML before saving
-    webViewRef.current?.injectJavaScript(
-      `(function(){
-        var el=document.getElementById('editor');
-        var h=el?el.innerHTML:'';
-        if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(JSON.stringify({type:'content_change',payload:{html:h}}));
-      })();true;`
-    );
-    saveTimeoutRef.current = setTimeout(doSave, 300);
+    if (Platform.OS === 'web') {
+      // On web, htmlRef is already current from continuous content_change messages
+      doSave();
+    } else {
+      // Flush absolute latest innerHTML before saving (WebView only)
+      webViewRef.current?.injectJavaScript(
+        `(function(){
+          var el=document.getElementById('editor');
+          var h=el?el.innerHTML:'';
+          if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(JSON.stringify({type:'content_change',payload:{html:h}}));
+        })();true;`
+      );
+      saveTimeoutRef.current = setTimeout(doSave, 300);
+    }
   }
 
   async function doSave() {
@@ -180,7 +206,7 @@ export function NoteEditorScreen() {
         blurOnSubmit={false}
       />
 
-      {/* Rich text editor via WebView */}
+      {/* Rich text editor — WebView on native, iframe on web */}
       <View style={styles.editorWrap}>
         {!editorReady && (
           <View style={styles.loadingOverlay}>
@@ -188,18 +214,29 @@ export function NoteEditorScreen() {
             <Text style={styles.loadingText}>Loading editor…</Text>
           </View>
         )}
-        <WebView
-          ref={webViewRef}
-          source={{ html: EDITOR_HTML }}
-          onMessage={onMessage}
-          javaScriptEnabled
-          domStorageEnabled
-          originWhitelist={['*']}
-          style={styles.webview}
-          keyboardDisplayRequiresUserAction={false}
-          scrollEnabled
-          allowsInlineMediaPlayback
-        />
+        {Platform.OS === 'web' ? (
+          // @ts-ignore – <iframe> is a valid DOM element when running on web
+          <iframe
+            ref={iframeRef}
+            srcDoc={EDITOR_HTML}
+            title="Rich text editor"
+            sandbox="allow-scripts allow-same-origin"
+            style={{ flex: 1, border: 'none', width: '100%', height: '100%', backgroundColor: colors.bg.base } as any}
+          />
+        ) : (
+          <WebView
+            ref={webViewRef}
+            source={{ html: EDITOR_HTML }}
+            onMessage={onMessage}
+            javaScriptEnabled
+            domStorageEnabled
+            originWhitelist={['*']}
+            style={styles.webview}
+            keyboardDisplayRequiresUserAction={false}
+            scrollEnabled
+            allowsInlineMediaPlayback
+          />
+        )}
       </View>
 
       {/* Attachments panel (edit mode only) */}
@@ -386,7 +423,7 @@ var html='';
 var timer=null;
 var savedRange=null;
 
-function post(t,d){var m=JSON.stringify({type:t,payload:d});if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(m);}
+function post(t,d){var m=JSON.stringify({type:t,payload:d});if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(m);else if(window.parent&&window.parent!==window)window.parent.postMessage(m,'*');}
 function getHtml(){return ed.innerHTML||'';}
 function emit(){
   html=getHtml();

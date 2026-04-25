@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet, Pressable, Keyboard,
-  KeyboardAvoidingView, Image,
+  KeyboardAvoidingView, Image, Platform,
 } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming, withSequence,
@@ -160,6 +160,7 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing[4],
+    ...Platform.select({ web: { maxWidth: 480, alignSelf: 'center' as const, width: '100%' } }),
   },
   footer: {
     textAlign: 'center',

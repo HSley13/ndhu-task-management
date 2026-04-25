@@ -347,6 +347,11 @@ function FileRow({ attachment, onDelete }: Props) {
   const isLocal = attachment.uri.startsWith('file://') || attachment.uri.startsWith('/');
 
   async function handleOpen() {
+    if (Platform.OS === 'web') {
+      // On web, react-native-webview doesn't render — open in a new browser tab.
+      await Linking.openURL(attachment.uri);
+      return;
+    }
     if (Platform.OS === 'android' && isLocal) {
       // Android WebView has no PDF plugin — open directly in the device's
       // native viewer (e.g. Google PDF Viewer) via Android VIEW intent.
