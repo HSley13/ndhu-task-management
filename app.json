@@ -27,6 +27,9 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "experiments": {
+      "baseUrl": "/ndhu-task-management"
+    },
     "plugins": [
       "expo-sqlite",
       "expo-secure-store",
