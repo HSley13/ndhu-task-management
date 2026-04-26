@@ -60,7 +60,28 @@ A mobile task management app for NDHU students. Syncs assignments directly from 
 | Notifications | expo-notifications                                                          |
 | File handling | expo-file-system, expo-document-picker, expo-image-picker                   |
 | Auth          | NDHU Moodle credentials (password never stored)                             |
+| Crypto        | node-forge — RSA-OAEP-SHA256 + AES-256-GCM hybrid encryption               |
 | Backend       | Drogon C++ REST API                                                         |
+
+## Password Security
+
+Your Moodle password is **never stored anywhere** — not in the app, not on the server, not in transit.
+
+Every time you log in the app performs hybrid encryption entirely on-device before the request leaves your phone:
+
+1. **A fresh random AES-256 key** is generated for this login only.
+2. **The password is encrypted** with AES-256-GCM (random 12-byte IV, 128-bit auth tag).
+3. **The AES key is encrypted** with the server's RSA-2048 public key using RSA-OAEP / SHA-256.
+4. Only the two ciphertexts (`encrypted_key` + `encrypted_password`) are sent over HTTPS — the plaintext password never leaves the device.
+
+On the server side the password is decrypted in memory, used once to authenticate with Moodle, and immediately discarded. What gets stored in the database is the resulting **Moodle session token**, itself encrypted again with a server-side AES-256-GCM key that lives only in the server's environment variables.
+
+| Threat | Why you're safe |
+|---|---|
+| Network interception | Only RSA-OAEP ciphertext is on the wire — unreadable without the server's private key |
+| Server database breach | Passwords are not in the database at all |
+| App storage inspection | The app stores only the JWT issued after login, never any credential |
+| Replay attack | The AES session key is regenerated fresh on every login, so captured traffic cannot be replayed |
 
 ## Getting Started
 

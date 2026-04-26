@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, ScrollView, Pressable, TextInput, StyleSheet, Linking, Platform,
+  View, Text, ScrollView, Pressable, TextInput, StyleSheet, Linking, Platform, Alert,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { BottomSheetModal, BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import { Feather } from '@expo/vector-icons';
 import { useTaskStore } from '../../store/useTaskStore';
@@ -35,7 +38,7 @@ export function TaskDetailSheet({
   sheetRef,
   onOpenNoteEditor,
 }: TaskDetailSheetProps) {
-  const { openTask: task, toggleDone, togglePin, addSubtask, deleteTask, closeTaskDetail, updateTask, deleteAttachment, addReminder, deleteReminder } = useTaskStore();
+  const { openTask: task, toggleDone, togglePin, addSubtask, deleteTask, closeTaskDetail, updateTask, deleteAttachment, addAttachment, addReminder, deleteReminder } = useTaskStore();
   const { labels: allLabels } = useLabelStore();
   const snapPoints = useMemo(() => ['60%', '90%'], []);
 
@@ -52,6 +55,48 @@ export function TaskDetailSheet({
 
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
+
+  async function pickImage() {
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo library access.'); return; }
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 });
+    if (result.canceled || !task) return;
+    const asset = result.assets[0];
+    if (!asset) return;
+    const ext = asset.uri.split('.').pop() ?? 'jpg';
+    const mime = `image/${ext === 'png' ? 'png' : 'jpeg'}`;
+    await addAttachment(task.id, { task_id: task.id, uri: asset.uri, name: asset.fileName ?? `image_${Date.now()}.${ext}`, mime_type: mime, size_bytes: asset.fileSize ?? 0 });
+  }
+
+  async function takePhoto() {
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('Permission needed', 'Allow camera access.'); return; }
+    }
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 });
+    if (result.canceled || !task) return;
+    const asset = result.assets[0];
+    if (!asset) return;
+    await addAttachment(task.id, { task_id: task.id, uri: asset.uri, name: asset.fileName ?? `photo_${Date.now()}.jpg`, mime_type: 'image/jpeg', size_bytes: asset.fileSize ?? 0 });
+  }
+
+  async function pickFile() {
+    const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
+    if (result.canceled || !task) return;
+    const file = result.assets[0];
+    if (!file) return;
+    let uri = file.uri;
+    if (Platform.OS !== 'web') {
+      const dir = `${FileSystem.documentDirectory}attachments/`;
+      await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+      const dest = `${dir}${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      await FileSystem.copyAsync({ from: file.uri, to: dest });
+      uri = dest;
+    }
+    await addAttachment(task.id, { task_id: task.id, uri, name: file.name, mime_type: file.mimeType ?? 'application/octet-stream', size_bytes: file.size ?? 0 });
+  }
 
   useEffect(() => {
     if (task) {
@@ -366,23 +411,37 @@ export function TaskDetailSheet({
         <Divider />
 
         {/* Attachments */}
-        {(task.attachments?.length ?? 0) > 0 && (
-          <>
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Attachments</Text>
-              <View style={styles.attachmentList}>
-                {task.attachments.map((att) => (
-                  <AttachmentRow
-                    key={att.id}
-                    attachment={att}
-                    onDelete={() => deleteAttachment(att.id)}
-                  />
-                ))}
-              </View>
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionLabel}>Attachments</Text>
+            <View style={styles.attActions}>
+              <Pressable style={styles.attActionBtn} onPress={pickImage} hitSlop={8}>
+                <Feather name="image" size={16} color={colors.text.secondary} />
+              </Pressable>
+              <Pressable style={styles.attActionBtn} onPress={takePhoto} hitSlop={8}>
+                <Feather name="camera" size={16} color={colors.text.secondary} />
+              </Pressable>
+              <Pressable style={styles.attActionBtn} onPress={pickFile} hitSlop={8}>
+                <Feather name="paperclip" size={16} color={colors.text.secondary} />
+              </Pressable>
             </View>
-            <Divider />
-          </>
-        )}
+          </View>
+          {(task.attachments?.length ?? 0) === 0 ? (
+            <Text style={styles.emptyAtt}>No attachments — tap an icon above to add</Text>
+          ) : (
+            <View style={styles.attachmentList}>
+              {task.attachments.map((att) => (
+                <AttachmentRow
+                  key={att.id}
+                  attachment={att}
+                  onDelete={() => deleteAttachment(att.id)}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+
+        <Divider />
 
         <LabelPickerModal
           visible={showLabelModal}
@@ -597,6 +656,26 @@ const styles = StyleSheet.create({
   },
   attachmentList: {
     gap: spacing[2],
+    marginTop: spacing[1],
+  },
+  attActions: {
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  attActionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.md,
+    backgroundColor: colors.bg.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+  },
+  emptyAtt: {
+    fontSize: fontSize.sm,
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
     marginTop: spacing[1],
   },
   actions: {
