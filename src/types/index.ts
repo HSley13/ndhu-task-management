@@ -77,4 +77,5 @@ export type PostponeOption =
   | { type: "minutes"; value: number; label: string }
   | { type: "time_today"; hour: number; label: string }
   | { type: "time_tomorrow"; hour: number; label: string }
+  | { type: "next_week"; label: string }
   | { type: "custom"; label: string };

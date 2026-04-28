@@ -1,5 +1,6 @@
 import {
   addMinutes,
+  addWeeks,
   setHours,
   setMinutes,
   setSeconds,
@@ -12,11 +13,16 @@ import {
 import type { PostponeOption } from "../types";
 
 export const DEFAULT_POSTPONE_OPTIONS: PostponeOption[] = [
+  { type: "minutes", value: 5, label: "In 5 minutes" },
+  { type: "minutes", value: 15, label: "In 15 minutes" },
+  { type: "minutes", value: 30, label: "In 30 minutes" },
   { type: "minutes", value: 60, label: "In 1 hour" },
+  { type: "minutes", value: 180, label: "In 3 hours" },
   { type: "time_today", hour: 9, label: "This morning" },
   { type: "time_today", hour: 18, label: "This evening" },
   { type: "time_tomorrow", hour: 9, label: "Tomorrow morning" },
   { type: "time_tomorrow", hour: 18, label: "Tomorrow evening" },
+  { type: "next_week", label: "Same time next week" },
   { type: "custom", label: "Pick a time..." },
 ];
 
@@ -48,6 +54,9 @@ export function computePostponeDate(
         setMinutes(setHours(startOfTomorrow(), option.hour), 0),
         0,
       );
+
+    case "next_week":
+      return addWeeks(now, 1);
 
     case "custom":
       if (!customDate)

@@ -7,6 +7,13 @@ import * as tasksDb from "../db/tasks";
 import type { Task, Reminder } from "../types";
 import { Notifications } from "./notificationsShim";
 
+/**
+ * How many 1-minute-apart notifications to fire for each reminder.
+ * The first fires at the scheduled time; subsequent ones repeat every minute
+ * until the user marks the task done or postpones it (which cancels them all).
+ */
+const REPEAT_SLOTS = 15;
+
 function buildDueDate(task: Task): Date | null {
   if (!task.due_date) return null;
   const timeStr = task.due_time
@@ -33,35 +40,44 @@ export async function scheduleRemindersForTask(
     const fireDate = addMinutes(dueDate, offset);
     if (isBefore(fireDate, new Date())) continue;
 
-    let expoId: string | null = null;
-    try {
-      expoId = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: task.title,
-          body:
-            `Due ${format(dueDate, "MMM d 'at' h:mm a")}` +
-            (task.course ? ` · ${task.course}` : ""),
-          sound: true,
-          ...(Platform.OS === "android" ? { channelId: "task-reminders" } : {}),
-          data: { task_id: task.id },
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DATE,
-          date: fireDate,
-        },
-      });
-    } catch {
-      // Notification scheduling failure is non-fatal
-    }
+    // Schedule the initial notification plus REPEAT_SLOTS-1 follow-ups,
+    // one per minute, so the alert keeps repeating until dismissed.
+    for (let slot = 0; slot < REPEAT_SLOTS; slot++) {
+      const slotDate = addMinutes(fireDate, slot);
+      if (isBefore(slotDate, new Date())) continue;
 
-    const reminder = await remindersDb.insertReminder(db, {
-      task_id: task.id,
-      offset_minutes: offset,
-      scheduled_at: fireDate.toISOString(),
-      expo_notification_id: expoId,
-      delivered: false,
-    });
-    created.push(reminder);
+      let expoId: string | null = null;
+      try {
+        expoId = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: task.title,
+            body:
+              `Due ${format(dueDate, "MMM d 'at' h:mm a")}` +
+              (task.course ? ` · ${task.course}` : ""),
+            sound: true,
+            ...(Platform.OS === "android"
+              ? { channelId: "task-reminders" }
+              : {}),
+            data: { task_id: task.id },
+          },
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.DATE,
+            date: slotDate,
+          },
+        });
+      } catch {
+        // Notification scheduling failure is non-fatal
+      }
+
+      const reminder = await remindersDb.insertReminder(db, {
+        task_id: task.id,
+        offset_minutes: offset,
+        scheduled_at: slotDate.toISOString(),
+        expo_notification_id: expoId,
+        delivered: false,
+      });
+      created.push(reminder);
+    }
   }
 
   return created;

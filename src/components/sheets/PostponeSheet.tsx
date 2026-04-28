@@ -20,6 +20,16 @@ import {
 } from "../../utils/postpone";
 import type { PostponeOption } from "../../types";
 
+function optionIcon(option: PostponeOption): React.ComponentProps<typeof Feather>["name"] {
+  if (option.type === "custom") return "edit-2";
+  if (option.type === "next_week") return "calendar";
+  if (option.type === "time_today") return "sun";
+  if (option.type === "time_tomorrow") return "sunrise";
+  // minutes
+  if ("value" in option && option.value <= 60) return "fast-forward";
+  return "clock";
+}
+
 const NativeDatePicker: React.ComponentType<any> =
   Platform.OS !== "web"
     ? require("@react-native-community/datetimepicker").default
@@ -121,7 +131,7 @@ export function PostponeSheet({
                     >
                       <View style={styles.iconWrap}>
                         <Feather
-                          name="clock"
+                          name={optionIcon(option)}
                           size={16}
                           color={colors.accent.default}
                         />

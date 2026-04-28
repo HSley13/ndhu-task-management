@@ -70,7 +70,7 @@ export function TaskDetailSheet({
     deleteAttachment,
     addAttachment,
     addReminder,
-    deleteReminder,
+    deleteReminderByOffset,
   } = useTaskStore();
   const { labels: allLabels } = useLabelStore();
   const snapPoints = useMemo(() => ["60%", "90%"], []);
@@ -224,9 +224,9 @@ export function TaskDetailSheet({
 
   async function handleToggleOffset(offset: number) {
     if (!task) return;
-    const existing = task.reminders?.find((r) => r.offset_minutes === offset);
-    if (existing) {
-      await deleteReminder(existing.id);
+    const active = task.reminders?.some((r) => r.offset_minutes === offset);
+    if (active) {
+      await deleteReminderByOffset(task.id, offset);
     } else {
       await addReminder(task.id, offset);
     }
@@ -239,8 +239,7 @@ export function TaskDetailSheet({
 
   async function handleRemoveCustom(offset: number) {
     if (!task) return;
-    const existing = task.reminders?.find((r) => r.offset_minutes === offset);
-    if (existing) await deleteReminder(existing.id);
+    await deleteReminderByOffset(task.id, offset);
   }
 
   async function handleAddSubtask() {
@@ -254,9 +253,9 @@ export function TaskDetailSheet({
     if (task!.moodle_url) Linking.openURL(task!.moodle_url);
   }
 
-  const activeReminderOffsets = (task?.reminders ?? []).map(
-    (r) => r.offset_minutes,
-  );
+  const activeReminderOffsets = [
+    ...new Set((task?.reminders ?? []).map((r) => r.offset_minutes)),
+  ];
 
   if (!task) return null;
 

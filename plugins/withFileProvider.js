@@ -63,6 +63,9 @@ function withFileProviderManifest(config) {
             $: {
               'android:name': 'android.support.FILE_PROVIDER_PATHS',
               'android:resource': '@xml/file_provider_paths',
+              // expo-file-system 19+ also declares this provider; tell the
+              // manifest merger to use our resource value instead of theirs.
+              'tools:replace': 'android:resource',
             },
           },
         ],

@@ -86,6 +86,18 @@ export async function deleteRemindersForTask(
   await db.runAsync("DELETE FROM reminders WHERE task_id = ?", task_id);
 }
 
+export async function deleteRemindersByOffset(
+  db: SQLite.SQLiteDatabase,
+  task_id: string,
+  offset_minutes: number,
+): Promise<void> {
+  await db.runAsync(
+    "DELETE FROM reminders WHERE task_id = ? AND offset_minutes = ?",
+    task_id,
+    offset_minutes,
+  );
+}
+
 export async function getPendingReminders(
   db: SQLite.SQLiteDatabase,
 ): Promise<Reminder[]> {

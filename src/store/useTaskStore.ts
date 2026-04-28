@@ -43,7 +43,7 @@ interface TaskStore {
   deleteAttachment(attachment_id: string): Promise<void>;
 
   addReminder(task_id: string, offset_minutes: number): Promise<void>;
-  deleteReminder(reminder_id: string): Promise<void>;
+  deleteReminderByOffset(task_id: string, offset_minutes: number): Promise<void>;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -94,6 +94,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     if (!task) return;
     const newStatus: Task["status"] =
       task.status === "done" ? "pending" : "done";
+    if (newStatus === "done") {
+      const { cancelRemindersForTask } = await import(
+        "../services/notifications"
+      );
+      await cancelRemindersForTask(id).catch(() => {});
+    }
     await get().updateTask(id, { status: newStatus });
   },
 
@@ -104,7 +110,24 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   async postponeTask(id, due_date, due_time) {
+    // Preserve existing reminder offsets, cancel them, then re-schedule for new time
+    const db = await getDb();
+    const existingReminders = await remindersDb.getRemindersForTask(db, id);
+    const offsets = [
+      ...new Set(existingReminders.map((r) => r.offset_minutes)),
+    ];
+    const { cancelRemindersForTask, scheduleRemindersForTask } = await import(
+      "../services/notifications"
+    );
+    await cancelRemindersForTask(id).catch(() => {});
     await get().updateTask(id, { due_date, due_time, status: "postponed" });
+    if (offsets.length > 0) {
+      const updatedTask = get().tasks.find((t) => t.id === id);
+      if (updatedTask) {
+        await scheduleRemindersForTask(updatedTask, offsets).catch(() => {});
+        await get().openTaskDetail(id);
+      }
+    }
   },
 
   async openTaskDetail(id) {
@@ -237,23 +260,27 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     });
   },
 
-  async deleteReminder(reminder_id) {
+  async deleteReminderByOffset(task_id, offset_minutes) {
     const db = await getDb();
-    const { openTask } = get();
-    const reminder = openTask?.reminders.find((r) => r.id === reminder_id);
-    if (reminder?.expo_notification_id) {
-      const { Notifications } = await import("../services/notificationsShim");
-      await Notifications?.cancelScheduledNotificationAsync(
-        reminder.expo_notification_id,
-      );
+    const { Notifications } = await import("../services/notificationsShim");
+    const all = await remindersDb.getRemindersForTask(db, task_id);
+    const toCancel = all.filter((r) => r.offset_minutes === offset_minutes);
+    for (const r of toCancel) {
+      if (r.expo_notification_id && Notifications) {
+        await Notifications.cancelScheduledNotificationAsync(
+          r.expo_notification_id,
+        ).catch(() => {});
+      }
     }
-    await remindersDb.deleteRemindersForTask(db, reminder_id);
+    await remindersDb.deleteRemindersByOffset(db, task_id, offset_minutes);
     set((s) => {
-      if (!s.openTask) return s;
+      if (!s.openTask || s.openTask.id !== task_id) return s;
       return {
         openTask: {
           ...s.openTask,
-          reminders: s.openTask.reminders.filter((r) => r.id !== reminder_id),
+          reminders: s.openTask.reminders.filter(
+            (r) => r.offset_minutes !== offset_minutes,
+          ),
         },
       };
     });

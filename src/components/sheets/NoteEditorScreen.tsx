@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -47,12 +48,27 @@ export function NoteEditorScreen() {
   const [title, setTitle] = useState("");
   const [editorReady, setEditorReady] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [kbVisible, setKbVisible] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<
     Array<{ uri: string; name: string; mime_type: string; size_bytes: number }>
   >([]);
   const htmlRef = useRef<string>("");
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialHtml = useRef<string>("");
+
+  // Track keyboard visibility so we can pin the toolbar above the keyboard
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () =>
+      setKbVisible(true),
+    );
+    const hide = Keyboard.addListener("keyboardDidHide", () =>
+      setKbVisible(false),
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   // Load existing task data in edit mode
   useEffect(() => {
@@ -262,6 +278,10 @@ export function NoteEditorScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       {/* Header */}
       <View style={styles.header}>
         <Pressable
@@ -341,8 +361,8 @@ export function NoteEditorScreen() {
         )}
       </View>
 
-      {/* Attachments panel — always visible */}
-      <View style={styles.attPanel}>
+      {/* Attachments panel — collapses to action strip when keyboard is open */}
+      <View style={[styles.attPanel, kbVisible && styles.attPanelCompact]}>
         <View style={styles.attHeader}>
           <Text style={styles.attHeaderLabel}>Attachments</Text>
           <View style={styles.attActions}>
@@ -405,6 +425,7 @@ export function NoteEditorScreen() {
           );
         })()}
       </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -459,6 +480,10 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border.subtle,
     backgroundColor: colors.bg.surface,
     maxHeight: 260,
+    overflow: "hidden",
+  },
+  attPanelCompact: {
+    maxHeight: 52, // only the action-button row is visible
   },
   attHeader: {
     flexDirection: "row",
