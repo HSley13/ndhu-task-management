@@ -144,13 +144,17 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
   async function pickFile() {
     const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: true });
     if (result.canceled) return;
-    const dir = `${FileSystem.documentDirectory}attachments/`;
-    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
     const newAtts = await Promise.all(result.assets.map(async (file) => {
-      const dest = `${dir}${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-      await FileSystem.copyAsync({ from: file.uri, to: dest });
+      let uri = file.uri;
+      if (Platform.OS !== 'web') {
+        const dir = `${FileSystem.documentDirectory}attachments/`;
+        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+        const dest = `${dir}${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        await FileSystem.copyAsync({ from: file.uri, to: dest });
+        uri = dest;
+      }
       return {
-        uri: dest,
+        uri,
         name: file.name,
         mime_type: file.mimeType ?? 'application/octet-stream',
         size_bytes: file.size ?? 0,
