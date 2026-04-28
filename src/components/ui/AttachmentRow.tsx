@@ -8,6 +8,7 @@ import { Feather } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import { WebView } from 'react-native-webview';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as IntentLauncher from 'expo-intent-launcher';
 import { colors, spacing, radius, fontSize } from '../../theme';
 import type { Attachment } from '../../types';
 
@@ -20,17 +21,26 @@ async function resolveViewerSource(uri: string): Promise<{ uri?: string }> {
   return { uri: `https://docs.google.com/gview?embedded=true&url=${encoded}` };
 }
 
-async function openLocalFileOnAndroid(uri: string): Promise<void> {
-  // content:// URIs (from DocumentPicker or already converted) can be opened directly.
+async function openLocalFileOnAndroid(uri: string, mimeType: string): Promise<void> {
+  // Convert file:// and bare paths to a content:// URI via FileProvider.
+  // content:// URIs from DocumentPicker can be used directly.
+  let contentUri: string;
   if (uri.startsWith('content://')) {
-    await Linking.openURL(uri);
-    return;
+    contentUri = uri;
+  } else {
+    const fileUri = uri.startsWith('/') ? `file://${uri}` : uri;
+    contentUri = await FileSystem.getContentUriAsync(fileUri);
   }
-  // file:// and bare paths need converting to a content:// URI via FileProvider,
-  // which is what getContentUriAsync does (expo-file-system/legacy only).
-  const fileUri = uri.startsWith('/') ? `file://${uri}` : uri;
-  const contentUri = await FileSystem.getContentUriAsync(fileUri);
-  await Linking.openURL(contentUri);
+
+  // Use IntentLauncher instead of Linking.openURL — it lets us pass:
+  //   • the MIME type (so Android picks the right handler app)
+  //   • FLAG_GRANT_READ_URI_PERMISSION (0x1) — without this, the receiving
+  //     app cannot read a content:// URI and shows "file can't be opened".
+  await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+    data: contentUri,
+    type: mimeType || '*/*',
+    flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+  });
 }
 
 function formatBytes(bytes: number): string {
@@ -216,7 +226,7 @@ function FileCard({ attachment, onDelete }: Props) {
     if (Platform.OS === 'android' && isLocal) {
       if (opening) return;
       setOpening(true);
-      try { await openLocalFileOnAndroid(attachment.uri); }
+      try { await openLocalFileOnAndroid(attachment.uri, attachment.mime_type); }
       catch { Alert.alert('Error', 'Could not open the file.'); }
       finally { setOpening(false); }
     } else {
