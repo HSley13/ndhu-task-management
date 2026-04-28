@@ -17,8 +17,8 @@ import { useSettingsStore } from './src/store/useSettingsStore';
 import { rescheduleAllReminders } from './src/services/notifications';
 import { colors } from './src/theme';
 
-// Configure notification handler and Android channel
-Notifications.setNotificationHandler({
+// Configure notification handler — controls foreground behaviour
+Notifications?.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
@@ -28,15 +28,27 @@ Notifications.setNotificationHandler({
   }),
 });
 
-if (Platform.OS === 'android') {
-  Notifications.setNotificationChannelAsync('task-reminders', {
-    name: 'Task Reminders',
-    importance: Notifications.AndroidImportance.HIGH,
-    sound: 'default',
-    vibrationPattern: [0, 250, 250, 250],
-    enableVibrate: true,
-    showBadge: false,
-  });
+/** Set up the Android channel and request permissions on all platforms. */
+async function initNotifications(): Promise<void> {
+  if (!Notifications) return; // web — not supported
+
+  // Android 8+ requires a channel; must exist before any notification fires.
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('task-reminders', {
+      name: 'Task Reminders',
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: 'default',
+      vibrationPattern: [0, 250, 250, 250],
+      enableVibrate: true,
+      showBadge: false,
+    });
+  }
+
+  // iOS and Android 13+ (API 33+) both require explicit permission.
+  const { status: existing } = await Notifications.getPermissionsAsync();
+  if (existing !== 'granted') {
+    await Notifications.requestPermissionsAsync();
+  }
 }
 
 function AppInner() {
@@ -46,15 +58,15 @@ function AppInner() {
   const { _loadFromStorage } = useSettingsStore();
 
   useEffect(() => {
-    // Request notification permissions
-    Notifications.requestPermissionsAsync().catch(() => {});
+    // Set up channel + permissions; non-fatal if it fails (e.g. web).
+    initNotifications().catch(() => {});
 
-    // Navigate to task when notification is tapped
-    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+    // Navigate to task when a notification is tapped.
+    const sub = Notifications?.addNotificationResponseReceivedListener((response) => {
       const taskId = response.notification.request.content.data?.['task_id'] as string | undefined;
       if (taskId) useTaskStore.getState().openTaskDetail(taskId);
     });
-    return () => sub.remove();
+    return () => sub?.remove();
   }, []);
 
   useEffect(() => {

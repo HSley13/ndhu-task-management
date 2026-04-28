@@ -2,12 +2,15 @@
  * Central access point for expo-notifications.
  *
  * Import `Notifications` from here instead of importing expo-notifications
- * directly. In a development build or production APK this returns the real
- * module. Setting it to null disables all notifications gracefully
- * (every caller already guards with `if (Notifications)`).
+ * directly. On native (iOS/Android) this returns the real module. On web it
+ * returns null so every caller can guard with `if (!Notifications) return`.
  *
- * NOTE: expo-notifications crashes in Expo Go SDK 53+ at module load time.
- * Run `npx expo run:android` (development build) to use notifications.
+ * NOTE: expo-notifications is not supported in Expo Go SDK 53+. You must use
+ * a development build (`npx expo run:android` / `npx expo run:ios`).
  */
-export const Notifications =
-  require("expo-notifications") as typeof import("expo-notifications");
+import { Platform } from 'react-native';
+
+export const Notifications: typeof import('expo-notifications') | null =
+  Platform.OS === 'web'
+    ? null
+    : (require('expo-notifications') as typeof import('expo-notifications'));
