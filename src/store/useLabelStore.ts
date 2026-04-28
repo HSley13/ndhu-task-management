@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import type { Label } from '../types';
-import { getDb } from '../db/client';
-import * as labelsDb from '../db/labels';
+import { create } from "zustand";
+import type { Label } from "../types";
+import { getDb } from "../db/client";
+import * as labelsDb from "../db/labels";
 
 interface LabelStore {
   labels: Label[];

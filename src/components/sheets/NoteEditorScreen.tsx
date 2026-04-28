@@ -1,20 +1,31 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import {
-  View, Text, Pressable, StyleSheet, TextInput,
-  Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
-import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
-import { Feather } from '@expo/vector-icons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { useTaskStore } from '../../store/useTaskStore';
-import { AttachmentRow } from '../ui/AttachmentRow';
-import { colors, spacing, radius, fontSize } from '../../theme';
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { WebView } from "react-native-webview";
+import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
+import { Feather } from "@expo/vector-icons";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { useTaskStore } from "../../store/useTaskStore";
+import { AttachmentRow } from "../ui/AttachmentRow";
+import { colors, spacing, radius, fontSize } from "../../theme";
 
-type NoteEditorRoute = RouteProp<{ NoteEditor: { taskId?: string } }, 'NoteEditor'>;
+type NoteEditorRoute = RouteProp<
+  { NoteEditor: { taskId?: string } },
+  "NoteEditor"
+>;
 
 export function NoteEditorScreen() {
   const navigation = useNavigation<any>();
@@ -22,17 +33,26 @@ export function NoteEditorScreen() {
   const taskId = route.params?.taskId;
   const isCreateMode = !taskId;
 
-  const { openTask, updateTask, addAttachment, deleteAttachment, openTaskDetail, addTask } = useTaskStore();
+  const {
+    openTask,
+    updateTask,
+    addAttachment,
+    deleteAttachment,
+    openTaskDetail,
+    addTask,
+  } = useTaskStore();
   const webViewRef = useRef<WebView>(null);
-  const iframeRef  = useRef<any>(null); // web only
+  const iframeRef = useRef<any>(null); // web only
 
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState("");
   const [editorReady, setEditorReady] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [pendingAttachments, setPendingAttachments] = useState<Array<{ uri: string; name: string; mime_type: string; size_bytes: number }>>([]);
-  const htmlRef = useRef<string>('');
+  const [pendingAttachments, setPendingAttachments] = useState<
+    Array<{ uri: string; name: string; mime_type: string; size_bytes: number }>
+  >([]);
+  const htmlRef = useRef<string>("");
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialHtml = useRef<string>('');
+  const initialHtml = useRef<string>("");
 
   // Load existing task data in edit mode
   useEffect(() => {
@@ -41,7 +61,7 @@ export function NoteEditorScreen() {
       openTaskDetail(taskId!);
     } else {
       setTitle(openTask.title);
-      initialHtml.current = openTask.note_content ?? '';
+      initialHtml.current = openTask.note_content ?? "";
       htmlRef.current = initialHtml.current;
     }
   }, [taskId, openTask?.id]);
@@ -50,48 +70,54 @@ export function NoteEditorScreen() {
   const onEditorReady = useCallback(() => {
     setEditorReady(true);
     if (initialHtml.current) {
-      sendToEditor('set_content', { html: initialHtml.current });
+      sendToEditor("set_content", { html: initialHtml.current });
     }
   }, []);
 
-  const sendToEditor = useCallback((type: string, payload: Record<string, unknown>) => {
-    const msg = JSON.stringify({ type, payload });
-    if (Platform.OS === 'web') {
-      iframeRef.current?.contentWindow?.postMessage(msg, '*');
-    } else {
-      webViewRef.current?.injectJavaScript(
-        `window.dispatchEvent(new MessageEvent('message',{data:${JSON.stringify(msg)}}));true;`
-      );
-    }
-  }, []);
+  const sendToEditor = useCallback(
+    (type: string, payload: Record<string, unknown>) => {
+      const msg = JSON.stringify({ type, payload });
+      if (Platform.OS === "web") {
+        iframeRef.current?.contentWindow?.postMessage(msg, "*");
+      } else {
+        webViewRef.current?.injectJavaScript(
+          `window.dispatchEvent(new MessageEvent('message',{data:${JSON.stringify(msg)}}));true;`,
+        );
+      }
+    },
+    [],
+  );
 
-  const onMessage = useCallback((event: { nativeEvent: { data: string } }) => {
-    try {
-      const { type, payload } = JSON.parse(event.nativeEvent.data);
-      if (type === 'ready') onEditorReady();
-      if (type === 'content_change') htmlRef.current = payload.html ?? '';
-    } catch {}
-  }, [onEditorReady]);
+  const onMessage = useCallback(
+    (event: { nativeEvent: { data: string } }) => {
+      try {
+        const { type, payload } = JSON.parse(event.nativeEvent.data);
+        if (type === "ready") onEditorReady();
+        if (type === "content_change") htmlRef.current = payload.html ?? "";
+      } catch {}
+    },
+    [onEditorReady],
+  );
 
   // Web: receive messages from the <iframe> via window.postMessage
   useEffect(() => {
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== "web") return;
     const handler = (event: MessageEvent) => {
       try {
         const { type, payload } = JSON.parse(event.data as string);
-        if (type === 'ready') onEditorReady();
-        if (type === 'content_change') htmlRef.current = payload.html ?? '';
+        if (type === "ready") onEditorReady();
+        if (type === "content_change") htmlRef.current = payload.html ?? "";
       } catch {}
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).addEventListener('message', handler);
+    (window as any).addEventListener("message", handler);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return () => (window as any).removeEventListener('message', handler);
+    return () => (window as any).removeEventListener("message", handler);
   }, [onEditorReady]);
 
   function handleSave() {
     setSaving(true);
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       // On web, htmlRef is already current from continuous content_change messages
       doSave();
     } else {
@@ -101,15 +127,18 @@ export function NoteEditorScreen() {
           var el=document.getElementById('editor');
           var h=el?el.innerHTML:'';
           if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(JSON.stringify({type:'content_change',payload:{html:h}}));
-        })();true;`
+        })();true;`,
       );
       saveTimeoutRef.current = setTimeout(doSave, 300);
     }
   }
 
   async function doSave() {
-    if (saveTimeoutRef.current) { clearTimeout(saveTimeoutRef.current); saveTimeoutRef.current = null; }
-    const resolvedTitle = title.trim() || 'Untitled note';
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    const resolvedTitle = title.trim() || "Untitled note";
     try {
       if (isCreateMode) {
         const task = await addTask({
@@ -117,8 +146,8 @@ export function NoteEditorScreen() {
           course: null,
           due_date: null,
           due_time: null,
-          source: 'manual',
-          status: 'pending',
+          source: "manual",
+          status: "pending",
           is_pinned: false,
           is_note: true,
           note_content: htmlRef.current || null,
@@ -130,7 +159,10 @@ export function NoteEditorScreen() {
           await addAttachment(task.id, { task_id: task.id, ...att });
         }
       } else {
-        await updateTask(taskId!, { title: resolvedTitle, note_content: htmlRef.current });
+        await updateTask(taskId!, {
+          title: resolvedTitle,
+          note_content: htmlRef.current,
+        });
       }
       navigation.goBack();
     } catch {
@@ -140,15 +172,29 @@ export function NoteEditorScreen() {
 
   async function pickImage() {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo library access.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, base64: true, quality: 0.7 });
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Allow photo library access.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      base64: true,
+      quality: 0.7,
+    });
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset) return;
-    const ext = asset.uri.split('.').pop() ?? 'jpg';
-    const mime = `image/${ext === 'png' ? 'png' : 'jpeg'}`;
-    sendToEditor('insert_image', { src: `data:${mime};base64,${asset.base64}` });
-    const attData = { uri: asset.uri, name: asset.fileName ?? `image.${ext}`, mime_type: mime, size_bytes: asset.fileSize ?? 0 };
+    const ext = asset.uri.split(".").pop() ?? "jpg";
+    const mime = `image/${ext === "png" ? "png" : "jpeg"}`;
+    sendToEditor("insert_image", {
+      src: `data:${mime};base64,${asset.base64}`,
+    });
+    const attData = {
+      uri: asset.uri,
+      name: asset.fileName ?? `image.${ext}`,
+      mime_type: mime,
+      size_bytes: asset.fileSize ?? 0,
+    };
     if (isCreateMode) {
       setPendingAttachments((prev) => [...prev, attData]);
     } else {
@@ -158,13 +204,27 @@ export function NoteEditorScreen() {
 
   async function takePhoto() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Allow camera access.'); return; }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, base64: true, quality: 0.7 });
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Allow camera access.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      base64: true,
+      quality: 0.7,
+    });
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset) return;
-    sendToEditor('insert_image', { src: `data:image/jpeg;base64,${asset.base64}` });
-    const attData = { uri: asset.uri, name: asset.fileName ?? 'photo.jpg', mime_type: 'image/jpeg', size_bytes: asset.fileSize ?? 0 };
+    sendToEditor("insert_image", {
+      src: `data:image/jpeg;base64,${asset.base64}`,
+    });
+    const attData = {
+      uri: asset.uri,
+      name: asset.fileName ?? "photo.jpg",
+      mime_type: "image/jpeg",
+      size_bytes: asset.fileSize ?? 0,
+    };
     if (isCreateMode) {
       setPendingAttachments((prev) => [...prev, attData]);
     } else {
@@ -173,19 +233,26 @@ export function NoteEditorScreen() {
   }
 
   async function pickFile() {
-    const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
+    const result = await DocumentPicker.getDocumentAsync({
+      copyToCacheDirectory: true,
+    });
     if (result.canceled) return;
     const file = result.assets[0];
     if (!file) return;
     let uri = file.uri;
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== "web") {
       const dir = `${FileSystem.documentDirectory}attachments/`;
       await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-      const dest = `${dir}${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const dest = `${dir}${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       await FileSystem.copyAsync({ from: file.uri, to: dest });
       uri = dest;
     }
-    const attData = { uri, name: file.name, mime_type: file.mimeType ?? 'application/octet-stream', size_bytes: file.size ?? 0 };
+    const attData = {
+      uri,
+      name: file.name,
+      mime_type: file.mimeType ?? "application/octet-stream",
+      size_bytes: file.size ?? 0,
+    };
     if (isCreateMode) {
       setPendingAttachments((prev) => [...prev, attData]);
     } else {
@@ -197,14 +264,27 @@ export function NoteEditorScreen() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerBtn} hitSlop={8}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={styles.headerBtn}
+          hitSlop={8}
+        >
           <Feather name="x" size={22} color={colors.text.secondary} />
         </Pressable>
         <View style={{ flex: 1 }} />
-        <Pressable onPress={handleSave} style={styles.saveBtn} disabled={saving} hitSlop={8}>
-          {saving
-            ? <ActivityIndicator size="small" color="#fff" />
-            : <Text style={styles.saveText}>{isCreateMode ? 'Create' : 'Save'}</Text>}
+        <Pressable
+          onPress={handleSave}
+          style={styles.saveBtn}
+          disabled={saving}
+          hitSlop={8}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveText}>
+              {isCreateMode ? "Create" : "Save"}
+            </Text>
+          )}
         </Pressable>
       </View>
 
@@ -228,14 +308,22 @@ export function NoteEditorScreen() {
             <Text style={styles.loadingText}>Loading editor…</Text>
           </View>
         )}
-        {Platform.OS === 'web' ? (
+        {Platform.OS === "web" ? (
           // @ts-ignore – <iframe> is a valid DOM element when running on web
           <iframe
             ref={iframeRef}
             srcDoc={EDITOR_HTML}
             title="Rich text editor"
             sandbox="allow-scripts allow-same-origin"
-            style={{ flex: 1, border: 'none', width: '100%', height: '100%', backgroundColor: colors.bg.base } as any}
+            style={
+              {
+                flex: 1,
+                border: "none",
+                width: "100%",
+                height: "100%",
+                backgroundColor: colors.bg.base,
+              } as any
+            }
           />
         ) : (
           <WebView
@@ -244,7 +332,7 @@ export function NoteEditorScreen() {
             onMessage={onMessage}
             javaScriptEnabled
             domStorageEnabled
-            originWhitelist={['*']}
+            originWhitelist={["*"]}
             style={styles.webview}
             keyboardDisplayRequiresUserAction={false}
             scrollEnabled
@@ -265,19 +353,29 @@ export function NoteEditorScreen() {
               <Feather name="camera" size={18} color={colors.text.secondary} />
             </Pressable>
             <Pressable style={styles.attAction} onPress={pickFile} hitSlop={6}>
-              <Feather name="paperclip" size={18} color={colors.text.secondary} />
+              <Feather
+                name="paperclip"
+                size={18}
+                color={colors.text.secondary}
+              />
             </Pressable>
           </View>
         </View>
 
         {(() => {
           const atts = isCreateMode
-            ? pendingAttachments.map((a, i) => ({ ...a, id: String(i), task_id: '' }))
+            ? pendingAttachments.map((a, i) => ({
+                ...a,
+                id: String(i),
+                task_id: "",
+              }))
             : (openTask?.attachments ?? []);
           if (atts.length === 0) {
             return (
               <View style={styles.attEmpty}>
-                <Text style={styles.attEmptyText}>No attachments yet — tap an icon above to add</Text>
+                <Text style={styles.attEmptyText}>
+                  No attachments yet — tap an icon above to add
+                </Text>
               </View>
             );
           }
@@ -293,9 +391,13 @@ export function NoteEditorScreen() {
                 <AttachmentRow
                   key={att.id}
                   attachment={att}
-                  onDelete={isCreateMode
-                    ? () => setPendingAttachments((p) => p.filter((_, idx) => idx !== i))
-                    : () => deleteAttachment(att.id)
+                  onDelete={
+                    isCreateMode
+                      ? () =>
+                          setPendingAttachments((p) =>
+                            p.filter((_, idx) => idx !== i),
+                          )
+                      : () => deleteAttachment(att.id)
                   }
                 />
               ))}
@@ -308,16 +410,49 @@ export function NoteEditorScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe:            { flex: 1, backgroundColor: colors.bg.base },
-  header:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing[4], paddingVertical: spacing[2], borderBottomWidth: 1, borderBottomColor: colors.border.subtle },
-  headerBtn:       { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  saveBtn:         { paddingHorizontal: spacing[4], paddingVertical: spacing[2], backgroundColor: colors.accent.default, borderRadius: radius.md },
-  saveText:        { fontSize: fontSize.sm, fontWeight: '700', color: '#fff' },
-  titleInput:      { paddingHorizontal: spacing[4], paddingTop: spacing[4], paddingBottom: spacing[3], fontSize: 24, fontWeight: '700', color: colors.text.primary, borderBottomWidth: 1, borderBottomColor: colors.border.subtle },
-  editorWrap:      { flex: 1, position: 'relative' },
-  webview:         { flex: 1, backgroundColor: colors.bg.base },
-  loadingOverlay:  { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg.base, zIndex: 10, gap: spacing[3] },
-  loadingText:     { fontSize: fontSize.sm, color: colors.text.tertiary },
+  safe: { flex: 1, backgroundColor: colors.bg.base },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  saveBtn: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
+    backgroundColor: colors.accent.default,
+    borderRadius: radius.md,
+  },
+  saveText: { fontSize: fontSize.sm, fontWeight: "700", color: "#fff" },
+  titleInput: {
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[4],
+    paddingBottom: spacing[3],
+    fontSize: 24,
+    fontWeight: "700",
+    color: colors.text.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
+  },
+  editorWrap: { flex: 1, position: "relative" },
+  webview: { flex: 1, backgroundColor: colors.bg.base },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.bg.base,
+    zIndex: 10,
+    gap: spacing[3],
+  },
+  loadingText: { fontSize: fontSize.sm, color: colors.text.tertiary },
   // \u2500\u2500 Attachments panel \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
   attPanel: {
     borderTopWidth: 1,
@@ -326,8 +461,8 @@ const styles = StyleSheet.create({
     maxHeight: 260,
   },
   attHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     borderBottomWidth: 1,
@@ -337,33 +472,33 @@ const styles = StyleSheet.create({
   attHeaderLabel: {
     flex: 1,
     fontSize: fontSize.xs,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text.tertiary,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.8,
   },
   attActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing[1],
   },
   attAction: {
     width: 34,
     height: 34,
     borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.bg.elevated,
   },
   attEmpty: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    alignItems: 'center',
+    alignItems: "center",
   },
   attEmptyText: {
     fontSize: fontSize.xs,
     color: colors.text.tertiary,
-    textAlign: 'center',
-    fontStyle: 'italic',
+    textAlign: "center",
+    fontStyle: "italic",
   },
   attList: {
     maxHeight: 190,

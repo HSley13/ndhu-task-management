@@ -1,14 +1,14 @@
-import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Feather } from '@expo/vector-icons';
-import { Platform, View } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { CalendarStack } from './CalendarStack';
-import { ListStack } from './ListStack';
-import { NotesStack } from './NotesStack';
-import { SettingsScreen } from '../screens/SettingsScreen';
-import { colors, radius, spacing } from '../theme';
-import type { AppTabsParamList } from './types';
+import React from "react";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { Feather } from "@expo/vector-icons";
+import { Platform, View } from "react-native";
+import { BlurView } from "expo-blur";
+import { CalendarStack } from "./CalendarStack";
+import { ListStack } from "./ListStack";
+import { NotesStack } from "./NotesStack";
+import { SettingsScreen } from "../screens/SettingsScreen";
+import { colors, radius, spacing } from "../theme";
+import type { AppTabsParamList } from "./types";
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
 
@@ -21,13 +21,13 @@ export function AppTabs() {
         tabBarActiveTintColor: colors.accent.default,
         tabBarInactiveTintColor: colors.text.tertiary,
         tabBarStyle: {
-          backgroundColor: 'transparent',
+          backgroundColor: "transparent",
           borderTopWidth: 0,
           elevation: 0,
-          position: 'absolute',
+          position: "absolute",
         },
         tabBarBackground: () =>
-          Platform.OS === 'ios' ? (
+          Platform.OS === "ios" ? (
             <BlurView
               intensity={80}
               tint="dark"
@@ -42,7 +42,7 @@ export function AppTabs() {
             <View
               style={{
                 flex: 1,
-                backgroundColor: colors.bg.surface + 'F0',
+                backgroundColor: colors.bg.surface + "F0",
                 borderTopWidth: 1,
                 borderTopColor: colors.border.subtle,
               }}
@@ -50,8 +50,8 @@ export function AppTabs() {
           ),
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '600',
-          marginBottom: Platform.OS === 'ios' ? 6 : 8,
+          fontWeight: "600",
+          marginBottom: Platform.OS === "ios" ? 6 : 8,
         },
         tabBarItemStyle: {
           paddingTop: 4,
@@ -63,32 +63,40 @@ export function AppTabs() {
         name="CalendarTab"
         component={CalendarStack}
         options={{
-          tabBarLabel: 'Calendar',
-          tabBarIcon: ({ color, size }) => <Feather name="calendar" size={size} color={color} />,
+          tabBarLabel: "Calendar",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="calendar" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
         name="ListTab"
         component={ListStack}
         options={{
-          tabBarLabel: 'Tasks',
-          tabBarIcon: ({ color, size }) => <Feather name="check-square" size={size} color={color} />,
+          tabBarLabel: "Tasks",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="check-square" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
         name="NotesTab"
         component={NotesStack}
         options={{
-          tabBarLabel: 'Notes',
-          tabBarIcon: ({ color, size }) => <Feather name="file-text" size={size} color={color} />,
+          tabBarLabel: "Notes",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="file-text" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
         name="SettingsTab"
         component={SettingsScreen}
         options={{
-          tabBarLabel: 'Settings',
-          tabBarIcon: ({ color, size }) => <Feather name="settings" size={size} color={color} />,
+          tabBarLabel: "Settings",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="settings" size={size} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>

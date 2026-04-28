@@ -1,6 +1,6 @@
-import React from 'react';
-import { Text, Pressable, StyleSheet, View } from 'react-native';
-import { colors, spacing, radius, fontSize } from '../../theme';
+import React from "react";
+import { Text, Pressable, StyleSheet, View } from "react-native";
+import { colors, spacing, radius, fontSize } from "../../theme";
 
 interface ChipProps {
   label: string;
@@ -10,9 +10,15 @@ interface ChipProps {
   onRemove?: () => void;
 }
 
-export function Chip({ label, color = colors.accent.default, active = false, onPress, onRemove }: ChipProps) {
-  const bg      = active ? color + '22' : 'transparent';
-  const border  = active ? color : colors.border.subtle;
+export function Chip({
+  label,
+  color = colors.accent.default,
+  active = false,
+  onPress,
+  onRemove,
+}: ChipProps) {
+  const bg = active ? color + "22" : "transparent";
+  const border = active ? color : colors.border.subtle;
   const textCol = active ? color : colors.text.secondary;
 
   return (
@@ -34,8 +40,8 @@ export function Chip({ label, color = colors.accent.default, active = false, onP
 
 const styles = StyleSheet.create({
   chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: radius.full,
     borderWidth: 1,
     paddingHorizontal: spacing[3],
@@ -44,14 +50,14 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: fontSize.sm,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   removeBtn: {
     marginLeft: 2,
   },
   removeText: {
     fontSize: fontSize.md,
-    fontWeight: '700',
+    fontWeight: "700",
     lineHeight: 18,
   },
 });

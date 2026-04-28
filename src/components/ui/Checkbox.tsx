@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import React, { useEffect } from "react";
+import { Pressable, StyleSheet } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -7,10 +7,10 @@ import Animated, {
   withSpring,
   withSequence,
   withTiming,
-} from 'react-native-reanimated';
-import Svg, { Circle, Path } from 'react-native-svg';
-import { colors } from '../../theme';
-import { useHaptics } from '../../hooks/useHaptics';
+} from "react-native-reanimated";
+import Svg, { Circle, Path } from "react-native-svg";
+import { colors } from "../../theme";
+import { useHaptics } from "../../hooks/useHaptics";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -40,7 +40,7 @@ export function Checkbox({ checked, onChange, size = 22 }: CheckboxProps) {
   }));
 
   const circleProps = useAnimatedProps(() => ({
-    fill: checked ? colors.accent.default : 'transparent',
+    fill: checked ? colors.accent.default : "transparent",
     fillOpacity: fillOpacity.value,
     stroke: checked ? colors.accent.default : colors.border.default,
   }));

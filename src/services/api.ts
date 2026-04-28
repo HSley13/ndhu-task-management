@@ -1,8 +1,10 @@
-import { useAuthStore } from '../store/useAuthStore';
-import type { RawAssignment } from '../types';
-import { encryptPassword } from './cryptoUtils';
+import { useAuthStore } from "../store/useAuthStore";
+import type { RawAssignment } from "../types";
+import { encryptPassword } from "./cryptoUtils";
 
-const BASE_URL = process.env['EXPO_PUBLIC_API_URL'] ?? 'https://ndhutaskmanagement.hslay13.online';
+const BASE_URL =
+  process.env["EXPO_PUBLIC_API_URL"] ??
+  "https://ndhutaskmanagement.hslay13.online";
 
 export class ApiError extends Error {
   constructor(
@@ -11,7 +13,7 @@ export class ApiError extends Error {
     public isRevoked: boolean = false,
   ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }
 
@@ -23,7 +25,7 @@ async function authenticatedFetch(
   const res = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       Authorization: `Bearer ${jwt}`,
       ...(options.headers as Record<string, string> | undefined),
     },
@@ -32,11 +34,13 @@ async function authenticatedFetch(
   if (res.status === 204) return res;
 
   if (res.status === 401) {
-    let message = 'Unauthorized';
+    let message = "Unauthorized";
     try {
       const body = (await res.json()) as { error?: string };
       message = body.error ?? message;
-    } catch { /* ignore parse errors */ }
+    } catch {
+      /* ignore parse errors */
+    }
     const err = new ApiError(401, message, true);
     // Side-effect: clear session automatically from anywhere in the app
     useAuthStore.getState().handleRevocation();
@@ -48,7 +52,9 @@ async function authenticatedFetch(
     try {
       const body = (await res.json()) as { error?: string };
       message = body.error ?? message;
-    } catch { /* ignore parse errors */ }
+    } catch {
+      /* ignore parse errors */
+    }
     throw new ApiError(res.status, message);
   }
 
@@ -61,57 +67,65 @@ export async function login(
 ): Promise<{ jwt: string; assignments: RawAssignment[] }> {
   const { encrypted_key, encrypted_password } = encryptPassword(password);
   const res = await fetch(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ student_id, encrypted_key, encrypted_password }),
   });
 
   if (res.status === 400) {
     const body = (await res.json()) as { error?: string };
-    throw new ApiError(400, body.error ?? 'Bad request');
+    throw new ApiError(400, body.error ?? "Bad request");
   }
   if (res.status === 401) {
-    throw new ApiError(401, 'Invalid credentials');
+    throw new ApiError(401, "Invalid credentials");
   }
   if (res.status === 503) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new ApiError(503, body.error ?? 'Moodle unavailable');
+    throw new ApiError(503, body.error ?? "Moodle unavailable");
   }
   if (!res.ok) {
     const body = (await res.json()) as { error?: string };
-    throw new ApiError(res.status, body.error ?? 'Login failed');
+    throw new ApiError(res.status, body.error ?? "Login failed");
   }
 
   return res.json() as Promise<{ jwt: string; assignments: RawAssignment[] }>;
 }
 
 export async function refreshToken(jwt: string): Promise<{ jwt: string }> {
-  const res = await authenticatedFetch(jwt, '/auth/refresh', { method: 'POST' });
+  const res = await authenticatedFetch(jwt, "/auth/refresh", {
+    method: "POST",
+  });
   return res.json() as Promise<{ jwt: string }>;
 }
 
 export async function logout(jwt: string): Promise<void> {
-  await authenticatedFetch(jwt, '/auth/logout', { method: 'POST' });
+  await authenticatedFetch(jwt, "/auth/logout", { method: "POST" });
 }
 
 export async function getAssignments(
   jwt: string,
   since?: number,
 ): Promise<{ assignments: RawAssignment[]; last_synced: number }> {
-  const url = since != null ? `/assignments?since=${Math.floor(since / 1000)}` : '/assignments';
+  const url =
+    since != null
+      ? `/assignments?since=${Math.floor(since / 1000)}`
+      : "/assignments";
   const res = await authenticatedFetch(jwt, url);
-  return res.json() as Promise<{ assignments: RawAssignment[]; last_synced: number }>;
+  return res.json() as Promise<{
+    assignments: RawAssignment[];
+    last_synced: number;
+  }>;
 }
 
 export async function registerPushToken(
   jwt: string,
   expo_push_token: string,
 ): Promise<void> {
-  if (!expo_push_token.startsWith('ExponentPushToken[')) {
-    throw new ApiError(400, 'Invalid push token format');
+  if (!expo_push_token.startsWith("ExponentPushToken[")) {
+    throw new ApiError(400, "Invalid push token format");
   }
-  await authenticatedFetch(jwt, '/notifications/register', {
-    method: 'POST',
+  await authenticatedFetch(jwt, "/notifications/register", {
+    method: "POST",
     body: JSON.stringify({ expo_push_token }),
   });
 }

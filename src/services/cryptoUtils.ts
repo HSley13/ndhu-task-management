@@ -12,7 +12,7 @@
  * Uses node-forge (pure JS) so it works in Expo Go / Hermes without any
  * native crypto modules or WebCrypto polyfills.
  */
-import forge from 'node-forge';
+import forge from "node-forge";
 
 const SERVER_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6ldFpZ1SPrNucQN+JoHx
@@ -41,7 +41,7 @@ export function encryptPassword(password: string): {
   const aesKeyBytes = forge.random.getBytesSync(32);
 
   // RSA-OAEP-SHA256-encrypt the AES key
-  const encryptedKeyBytes = publicKey.encrypt(aesKeyBytes, 'RSA-OAEP', {
+  const encryptedKeyBytes = publicKey.encrypt(aesKeyBytes, "RSA-OAEP", {
     md: forge.md.sha256.create(),
     mgf1: { md: forge.md.sha256.create() },
   });
@@ -50,9 +50,9 @@ export function encryptPassword(password: string): {
   const iv = forge.random.getBytesSync(12);
 
   // AES-GCM-encrypt the password (UTF-8 bytes)
-  const cipher = forge.cipher.createCipher('AES-GCM', aesKeyBytes);
+  const cipher = forge.cipher.createCipher("AES-GCM", aesKeyBytes);
   cipher.start({ iv, tagLength: 128 });
-  cipher.update(forge.util.createBuffer(password, 'utf8'));
+  cipher.update(forge.util.createBuffer(password, "utf8"));
   cipher.finish();
 
   const ciphertext = cipher.output.getBytes();

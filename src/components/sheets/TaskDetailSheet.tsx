@@ -1,32 +1,53 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
-  View, Text, ScrollView, Pressable, TextInput, StyleSheet, Linking, Platform, Alert,
-} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
-import { BottomSheetModal, BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { Feather } from '@expo/vector-icons';
-import { useTaskStore } from '../../store/useTaskStore';
-import { useLabelStore } from '../../store/useLabelStore';
-import { useSettingsStore } from '../../store/useSettingsStore';
-import { colors, spacing, radius, fontSize, shadows } from '../../theme';
-import { Checkbox } from '../ui/Checkbox';
-import { Button } from '../ui/Button';
-import { Chip } from '../ui/Chip';
-import { Divider } from '../ui/Divider';
-import { SheetHandle } from '../ui/SheetHandle';
-import { SubtaskRow } from '../task/SubtaskRow';
-import { AttachmentRow } from '../ui/AttachmentRow';
-import { format, parseISO } from 'date-fns';
-import { ReminderPickerModal, formatReminderOffset } from '../ui/ReminderPickerModal';
-import { LabelPickerModal } from '../ui/LabelPickerModal';
-import type { TaskFull } from '../../types';
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  TextInput,
+  StyleSheet,
+  Linking,
+  Platform,
+  Alert,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
+import {
+  BottomSheetModal,
+  BottomSheetScrollView,
+  BottomSheetBackdrop,
+} from "@gorhom/bottom-sheet";
+import { Feather } from "@expo/vector-icons";
+import { useTaskStore } from "../../store/useTaskStore";
+import { useLabelStore } from "../../store/useLabelStore";
+import { useSettingsStore } from "../../store/useSettingsStore";
+import { colors, spacing, radius, fontSize, shadows } from "../../theme";
+import { Checkbox } from "../ui/Checkbox";
+import { Button } from "../ui/Button";
+import { Chip } from "../ui/Chip";
+import { Divider } from "../ui/Divider";
+import { SheetHandle } from "../ui/SheetHandle";
+import { SubtaskRow } from "../task/SubtaskRow";
+import { AttachmentRow } from "../ui/AttachmentRow";
+import { format, parseISO } from "date-fns";
+import {
+  ReminderPickerModal,
+  formatReminderOffset,
+} from "../ui/ReminderPickerModal";
+import { LabelPickerModal } from "../ui/LabelPickerModal";
+import type { TaskFull } from "../../types";
 
 // Platform-safe date picker: native only (web uses HTML input type="date")
 const NativeDatePicker: React.ComponentType<any> =
-  Platform.OS !== 'web'
-    ? require('@react-native-community/datetimepicker').default
+  Platform.OS !== "web"
+    ? require("@react-native-community/datetimepicker").default
     : View;
 
 interface TaskDetailSheetProps {
@@ -38,15 +59,27 @@ export function TaskDetailSheet({
   sheetRef,
   onOpenNoteEditor,
 }: TaskDetailSheetProps) {
-  const { openTask: task, toggleDone, togglePin, addSubtask, deleteTask, closeTaskDetail, updateTask, deleteAttachment, addAttachment, addReminder, deleteReminder } = useTaskStore();
+  const {
+    openTask: task,
+    toggleDone,
+    togglePin,
+    addSubtask,
+    deleteTask,
+    closeTaskDetail,
+    updateTask,
+    deleteAttachment,
+    addAttachment,
+    addReminder,
+    deleteReminder,
+  } = useTaskStore();
   const { labels: allLabels } = useLabelStore();
-  const snapPoints = useMemo(() => ['60%', '90%'], []);
+  const snapPoints = useMemo(() => ["60%", "90%"], []);
 
-  const [newSubtask, setNewSubtask] = useState('');
+  const [newSubtask, setNewSubtask] = useState("");
 
   // Inline-editable fields — auto-save on blur / immediate on picker confirm
-  const [titleVal, setTitleVal] = useState('');
-  const [courseVal, setCourseVal] = useState('');
+  const [titleVal, setTitleVal] = useState("");
+  const [courseVal, setCourseVal] = useState("");
   const [editingCourse, setEditingCourse] = useState(false);
   const [dueDateVal, setDueDateVal] = useState<Date | null>(null);
   const [dueTimeVal, setDueTimeVal] = useState<Date | null>(null);
@@ -57,53 +90,88 @@ export function TaskDetailSheet({
   const [showLabelModal, setShowLabelModal] = useState(false);
 
   async function pickImage() {
-    if (Platform.OS !== 'web') {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo library access.'); return; }
+    if (Platform.OS !== "web") {
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Allow photo library access.");
+        return;
+      }
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+    });
     if (result.canceled || !task) return;
     const asset = result.assets[0];
     if (!asset) return;
-    const ext = asset.uri.split('.').pop() ?? 'jpg';
-    const mime = `image/${ext === 'png' ? 'png' : 'jpeg'}`;
-    await addAttachment(task.id, { task_id: task.id, uri: asset.uri, name: asset.fileName ?? `image_${Date.now()}.${ext}`, mime_type: mime, size_bytes: asset.fileSize ?? 0 });
+    const ext = asset.uri.split(".").pop() ?? "jpg";
+    const mime = `image/${ext === "png" ? "png" : "jpeg"}`;
+    await addAttachment(task.id, {
+      task_id: task.id,
+      uri: asset.uri,
+      name: asset.fileName ?? `image_${Date.now()}.${ext}`,
+      mime_type: mime,
+      size_bytes: asset.fileSize ?? 0,
+    });
   }
 
   async function takePhoto() {
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== "web") {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permission needed', 'Allow camera access.'); return; }
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Allow camera access.");
+        return;
+      }
     }
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.85 });
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.85,
+    });
     if (result.canceled || !task) return;
     const asset = result.assets[0];
     if (!asset) return;
-    await addAttachment(task.id, { task_id: task.id, uri: asset.uri, name: asset.fileName ?? `photo_${Date.now()}.jpg`, mime_type: 'image/jpeg', size_bytes: asset.fileSize ?? 0 });
+    await addAttachment(task.id, {
+      task_id: task.id,
+      uri: asset.uri,
+      name: asset.fileName ?? `photo_${Date.now()}.jpg`,
+      mime_type: "image/jpeg",
+      size_bytes: asset.fileSize ?? 0,
+    });
   }
 
   async function pickFile() {
-    const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
+    const result = await DocumentPicker.getDocumentAsync({
+      copyToCacheDirectory: true,
+    });
     if (result.canceled || !task) return;
     const file = result.assets[0];
     if (!file) return;
     let uri = file.uri;
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== "web") {
       const dir = `${FileSystem.documentDirectory}attachments/`;
       await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-      const dest = `${dir}${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const dest = `${dir}${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       await FileSystem.copyAsync({ from: file.uri, to: dest });
       uri = dest;
     }
-    await addAttachment(task.id, { task_id: task.id, uri, name: file.name, mime_type: file.mimeType ?? 'application/octet-stream', size_bytes: file.size ?? 0 });
+    await addAttachment(task.id, {
+      task_id: task.id,
+      uri,
+      name: file.name,
+      mime_type: file.mimeType ?? "application/octet-stream",
+      size_bytes: file.size ?? 0,
+    });
   }
 
   useEffect(() => {
     if (task) {
       setTitleVal(task.title);
-      setCourseVal(task.course ?? '');
+      setCourseVal(task.course ?? "");
       setDueDateVal(task.due_date ? parseISO(task.due_date) : null);
-      setDueTimeVal(task.due_time ? parseISO(`2000-01-01T${task.due_time}`) : null);
+      setDueTimeVal(
+        task.due_time ? parseISO(`2000-01-01T${task.due_time}`) : null,
+      );
     }
     setEditingCourse(false);
     setShowDatePicker(false);
@@ -113,12 +181,18 @@ export function TaskDetailSheet({
   }, [task?.id]);
 
   const renderBackdrop = useCallback(
-    (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+      />
+    ),
     [],
   );
 
   const taskLabels = allLabels.filter((l) =>
-    task?.labels?.some((tl: any) => tl.label_id === l.id || tl.id === l.id)
+    task?.labels?.some((tl: any) => tl.label_id === l.id || tl.id === l.id),
   );
 
   // Auto-save helpers
@@ -139,13 +213,13 @@ export function TaskDetailSheet({
   async function saveDueDate(d: Date | null) {
     if (!task) return;
     setDueDateVal(d);
-    await updateTask(task.id, { due_date: d ? format(d, 'yyyy-MM-dd') : null });
+    await updateTask(task.id, { due_date: d ? format(d, "yyyy-MM-dd") : null });
   }
 
   async function saveDueTime(t: Date | null) {
     if (!task) return;
     setDueTimeVal(t);
-    await updateTask(task.id, { due_time: t ? format(t, 'HH:mm:ss') : null });
+    await updateTask(task.id, { due_time: t ? format(t, "HH:mm:ss") : null });
   }
 
   async function handleToggleOffset(offset: number) {
@@ -172,7 +246,7 @@ export function TaskDetailSheet({
   async function handleAddSubtask() {
     const t = newSubtask.trim();
     if (!t) return;
-    setNewSubtask('');
+    setNewSubtask("");
     await addSubtask(task!.id, t);
   }
 
@@ -180,7 +254,9 @@ export function TaskDetailSheet({
     if (task!.moodle_url) Linking.openURL(task!.moodle_url);
   }
 
-  const activeReminderOffsets = (task?.reminders ?? []).map((r) => r.offset_minutes);
+  const activeReminderOffsets = (task?.reminders ?? []).map(
+    (r) => r.offset_minutes,
+  );
 
   if (!task) return null;
 
@@ -197,12 +273,19 @@ export function TaskDetailSheet({
       <BottomSheetScrollView contentContainerStyle={styles.content}>
         {/* Header: inline-editable title */}
         <View style={styles.header}>
-          <Checkbox checked={task.status === 'done'} onChange={() => toggleDone(task.id)} />
+          <Checkbox
+            checked={task.status === "done"}
+            onChange={() => toggleDone(task.id)}
+          />
           <TextInput
             value={titleVal}
             onChangeText={setTitleVal}
             onBlur={saveTitle}
-            style={[styles.title, styles.titleInput, task.status === 'done' && styles.titleDone]}
+            style={[
+              styles.title,
+              styles.titleInput,
+              task.status === "done" && styles.titleDone,
+            ]}
             multiline
             returnKeyType="done"
             blurOnSubmit
@@ -211,7 +294,9 @@ export function TaskDetailSheet({
             <Feather
               name="bookmark"
               size={22}
-              color={task.is_pinned ? colors.accent.default : colors.border.strong}
+              color={
+                task.is_pinned ? colors.accent.default : colors.border.strong
+              }
             />
           </Pressable>
         </View>
@@ -231,43 +316,92 @@ export function TaskDetailSheet({
               autoFocus
             />
           ) : (
-            <Pressable style={styles.metaChip} onPress={() => setEditingCourse(true)}>
-              <Feather name="book-open" size={12} color={colors.text.tertiary} />
-              <Text style={styles.metaText}>{courseVal || 'Add course'}</Text>
+            <Pressable
+              style={styles.metaChip}
+              onPress={() => setEditingCourse(true)}
+            >
+              <Feather
+                name="book-open"
+                size={12}
+                color={colors.text.tertiary}
+              />
+              <Text style={styles.metaText}>{courseVal || "Add course"}</Text>
             </Pressable>
           )}
 
           {/* Due date pill — always tappable */}
-          <Pressable style={[styles.metaChip, dueDateVal && styles.metaChipActive]} onPress={() => setShowDatePicker(true)}>
-            <Feather name="calendar" size={12} color={dueDateVal ? colors.accent.default : colors.text.tertiary} />
-            <Text style={[styles.metaText, dueDateVal && { color: colors.text.secondary }]}>
-              {dueDateVal ? format(dueDateVal, 'MMM d, yyyy') : 'Add due date'}
+          <Pressable
+            style={[styles.metaChip, dueDateVal && styles.metaChipActive]}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Feather
+              name="calendar"
+              size={12}
+              color={dueDateVal ? colors.accent.default : colors.text.tertiary}
+            />
+            <Text
+              style={[
+                styles.metaText,
+                dueDateVal && { color: colors.text.secondary },
+              ]}
+            >
+              {dueDateVal ? format(dueDateVal, "MMM d, yyyy") : "Add due date"}
             </Text>
             {dueDateVal && (
-              <Pressable onPress={(e) => { e.stopPropagation?.(); saveDueDate(null); }} hitSlop={6}>
+              <Pressable
+                onPress={(e) => {
+                  e.stopPropagation?.();
+                  saveDueDate(null);
+                }}
+                hitSlop={6}
+              >
                 <Feather name="x" size={11} color={colors.text.tertiary} />
               </Pressable>
             )}
           </Pressable>
 
           {dueDateVal && (
-            <Pressable style={[styles.metaChip, dueTimeVal && styles.metaChipActive]} onPress={() => setShowTimePicker(true)}>
-              <Feather name="clock" size={12} color={dueTimeVal ? colors.accent.default : colors.text.tertiary} />
-              <Text style={[styles.metaText, dueTimeVal && { color: colors.text.secondary }]}>
-                {dueTimeVal ? format(dueTimeVal, 'h:mm a') : 'Add time'}
+            <Pressable
+              style={[styles.metaChip, dueTimeVal && styles.metaChipActive]}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <Feather
+                name="clock"
+                size={12}
+                color={
+                  dueTimeVal ? colors.accent.default : colors.text.tertiary
+                }
+              />
+              <Text
+                style={[
+                  styles.metaText,
+                  dueTimeVal && { color: colors.text.secondary },
+                ]}
+              >
+                {dueTimeVal ? format(dueTimeVal, "h:mm a") : "Add time"}
               </Text>
               {dueTimeVal && (
-                <Pressable onPress={(e) => { e.stopPropagation?.(); saveDueTime(null); }} hitSlop={6}>
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    saveDueTime(null);
+                  }}
+                  hitSlop={6}
+                >
                   <Feather name="x" size={11} color={colors.text.tertiary} />
                 </Pressable>
               )}
             </Pressable>
           )}
 
-          {task.source === 'moodle' && (
-            <View style={[styles.metaChip, { backgroundColor: colors.info + '22' }]}>
+          {task.source === "moodle" && (
+            <View
+              style={[styles.metaChip, { backgroundColor: colors.info + "22" }]}
+            >
               <Feather name="zap" size={12} color={colors.info} />
-              <Text style={[styles.metaText, { color: colors.info }]}>Moodle</Text>
+              <Text style={[styles.metaText, { color: colors.info }]}>
+                Moodle
+              </Text>
             </View>
           )}
 
@@ -283,30 +417,51 @@ export function TaskDetailSheet({
               <Feather
                 name="bell"
                 size={12}
-                color={activeReminderOffsets.length > 0 ? colors.accent.default : colors.text.tertiary}
+                color={
+                  activeReminderOffsets.length > 0
+                    ? colors.accent.default
+                    : colors.text.tertiary
+                }
               />
-              <Text style={[styles.metaText, activeReminderOffsets.length > 0 && { color: colors.accent.default }]}>
+              <Text
+                style={[
+                  styles.metaText,
+                  activeReminderOffsets.length > 0 && {
+                    color: colors.accent.default,
+                  },
+                ]}
+              >
                 {activeReminderOffsets.length > 0
                   ? activeReminderOffsets.length === 1
                     ? formatReminderOffset(activeReminderOffsets[0])
                     : `${activeReminderOffsets.length} reminders`
-                  : 'Remind me'}
+                  : "Remind me"}
               </Text>
             </Pressable>
           )}
 
           {/* Label tag chip in meta row */}
           <Pressable
-            style={[styles.metaChip, taskLabels.length > 0 && styles.metaChipActive]}
+            style={[
+              styles.metaChip,
+              taskLabels.length > 0 && styles.metaChipActive,
+            ]}
             onPress={() => setShowLabelModal(true)}
           >
             <Feather
               name="tag"
               size={12}
-              color={taskLabels.length > 0 ? colors.accent.default : colors.text.tertiary}
+              color={
+                taskLabels.length > 0
+                  ? colors.accent.default
+                  : colors.text.tertiary
+              }
             />
             {taskLabels.slice(0, 4).map((l) => (
-              <View key={l.id} style={[styles.labelDotInline, { backgroundColor: l.color }]} />
+              <View
+                key={l.id}
+                style={[styles.labelDotInline, { backgroundColor: l.color }]}
+              />
             ))}
           </Pressable>
         </View>
@@ -323,44 +478,81 @@ export function TaskDetailSheet({
         )}
 
         {/* Date/time pickers */}
-        {showDatePicker && Platform.OS !== 'web' && (
+        {showDatePicker && Platform.OS !== "web" && (
           <NativeDatePicker
             value={dueDateVal ?? new Date()}
             mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(_: any, d?: Date) => { setShowDatePicker(false); if (d) saveDueDate(d); }}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(_: any, d?: Date) => {
+              setShowDatePicker(false);
+              if (d) saveDueDate(d);
+            }}
             textColor="#FFFFFF"
           />
         )}
-        {showDatePicker && Platform.OS === 'web' && React.createElement('input', {
-          type: 'date',
-          value: dueDateVal ? format(dueDateVal, 'yyyy-MM-dd') : '',
-          onChange: (e: any) => { setShowDatePicker(false); if (e.target.value) saveDueDate(parseISO(e.target.value)); },
-          style: { colorScheme: 'dark', color: colors.text.primary, background: colors.bg.elevated, border: `1px solid ${colors.border.default}`, borderRadius: `${radius.md}px`, padding: `${spacing[2]}px ${spacing[3]}px`, fontSize: `${fontSize.sm}px`, outline: 'none', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' },
-        })}
-        {showTimePicker && Platform.OS !== 'web' && (
+        {showDatePicker &&
+          Platform.OS === "web" &&
+          React.createElement("input", {
+            type: "date",
+            value: dueDateVal ? format(dueDateVal, "yyyy-MM-dd") : "",
+            onChange: (e: any) => {
+              setShowDatePicker(false);
+              if (e.target.value) saveDueDate(parseISO(e.target.value));
+            },
+            style: {
+              colorScheme: "dark",
+              color: colors.text.primary,
+              background: colors.bg.elevated,
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: `${radius.md}px`,
+              padding: `${spacing[2]}px ${spacing[3]}px`,
+              fontSize: `${fontSize.sm}px`,
+              outline: "none",
+              width: "100%",
+              boxSizing: "border-box",
+              fontFamily: "inherit",
+            },
+          })}
+        {showTimePicker && Platform.OS !== "web" && (
           <NativeDatePicker
             value={dueTimeVal ?? new Date()}
             mode="time"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(_: any, d?: Date) => { setShowTimePicker(false); if (d) saveDueTime(d); }}
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={(_: any, d?: Date) => {
+              setShowTimePicker(false);
+              if (d) saveDueTime(d);
+            }}
             textColor="#FFFFFF"
           />
         )}
-        {showTimePicker && Platform.OS === 'web' && React.createElement('input', {
-          type: 'time',
-          value: dueTimeVal ? format(dueTimeVal, 'HH:mm') : '',
-          onChange: (e: any) => {
-            setShowTimePicker(false);
-            if (e.target.value) {
-              const d = dueDateVal ? new Date(dueDateVal) : new Date();
-              const [h, m] = e.target.value.split(':').map(Number);
-              d.setHours(h, m, 0, 0);
-              saveDueTime(d);
-            }
-          },
-          style: { colorScheme: 'dark', color: colors.text.primary, background: colors.bg.elevated, border: `1px solid ${colors.border.default}`, borderRadius: `${radius.md}px`, padding: `${spacing[2]}px ${spacing[3]}px`, fontSize: `${fontSize.sm}px`, outline: 'none', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' },
-        })}
+        {showTimePicker &&
+          Platform.OS === "web" &&
+          React.createElement("input", {
+            type: "time",
+            value: dueTimeVal ? format(dueTimeVal, "HH:mm") : "",
+            onChange: (e: any) => {
+              setShowTimePicker(false);
+              if (e.target.value) {
+                const d = dueDateVal ? new Date(dueDateVal) : new Date();
+                const [h, m] = e.target.value.split(":").map(Number);
+                d.setHours(h, m, 0, 0);
+                saveDueTime(d);
+              }
+            },
+            style: {
+              colorScheme: "dark",
+              color: colors.text.primary,
+              background: colors.bg.elevated,
+              border: `1px solid ${colors.border.default}`,
+              borderRadius: `${radius.md}px`,
+              padding: `${spacing[2]}px ${spacing[3]}px`,
+              fontSize: `${fontSize.sm}px`,
+              outline: "none",
+              width: "100%",
+              boxSizing: "border-box",
+              fontFamily: "inherit",
+            },
+          })}
 
         <Divider />
 
@@ -371,18 +563,25 @@ export function TaskDetailSheet({
             {task.note_content ? (
               <Text style={styles.noteText} numberOfLines={4}>
                 {task.note_content
-                  .replace(/<[^>]*>/g, ' ')
-                  .replace(/&nbsp;/g, ' ')
-                  .replace(/&amp;/g, '&')
-                  .replace(/&lt;/g, '<')
-                  .replace(/&gt;/g, '>')
-                  .replace(/\s+/g, ' ')
+                  .replace(/<[^>]*>/g, " ")
+                  .replace(/&nbsp;/g, " ")
+                  .replace(/&amp;/g, "&")
+                  .replace(/&lt;/g, "<")
+                  .replace(/&gt;/g, ">")
+                  .replace(/\s+/g, " ")
                   .trim()}
               </Text>
             ) : (
-              <Text style={styles.notePlaceholder}>Tap to add a description…</Text>
+              <Text style={styles.notePlaceholder}>
+                Tap to add a description…
+              </Text>
             )}
-            <Feather name="edit-2" size={14} color={colors.text.tertiary} style={{ alignSelf: 'flex-start', marginTop: 2 }} />
+            <Feather
+              name="edit-2"
+              size={14}
+              color={colors.text.tertiary}
+              style={{ alignSelf: "flex-start", marginTop: 2 }}
+            />
           </Pressable>
         </View>
 
@@ -391,7 +590,9 @@ export function TaskDetailSheet({
         {/* Subtasks */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Subtasks</Text>
-          {task.subtasks?.map((s) => <SubtaskRow key={s.id} subtask={s} />)}
+          {task.subtasks?.map((s) => (
+            <SubtaskRow key={s.id} subtask={s} />
+          ))}
           <View style={styles.addSubtask}>
             <Feather name="plus" size={16} color={colors.text.tertiary} />
             <TextInput
@@ -406,8 +607,6 @@ export function TaskDetailSheet({
           </View>
         </View>
 
-
-
         <Divider />
 
         {/* Attachments */}
@@ -415,19 +614,41 @@ export function TaskDetailSheet({
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionLabel}>Attachments</Text>
             <View style={styles.attActions}>
-              <Pressable style={styles.attActionBtn} onPress={pickImage} hitSlop={8}>
+              <Pressable
+                style={styles.attActionBtn}
+                onPress={pickImage}
+                hitSlop={8}
+              >
                 <Feather name="image" size={16} color={colors.text.secondary} />
               </Pressable>
-              <Pressable style={styles.attActionBtn} onPress={takePhoto} hitSlop={8}>
-                <Feather name="camera" size={16} color={colors.text.secondary} />
+              <Pressable
+                style={styles.attActionBtn}
+                onPress={takePhoto}
+                hitSlop={8}
+              >
+                <Feather
+                  name="camera"
+                  size={16}
+                  color={colors.text.secondary}
+                />
               </Pressable>
-              <Pressable style={styles.attActionBtn} onPress={pickFile} hitSlop={8}>
-                <Feather name="paperclip" size={16} color={colors.text.secondary} />
+              <Pressable
+                style={styles.attActionBtn}
+                onPress={pickFile}
+                hitSlop={8}
+              >
+                <Feather
+                  name="paperclip"
+                  size={16}
+                  color={colors.text.secondary}
+                />
               </Pressable>
             </View>
           </View>
           {(task.attachments?.length ?? 0) === 0 ? (
-            <Text style={styles.emptyAtt}>No attachments — tap an icon above to add</Text>
+            <Text style={styles.emptyAtt}>
+              No attachments — tap an icon above to add
+            </Text>
           ) : (
             <View style={styles.attachmentList}>
               {task.attachments.map((att) => (
@@ -458,7 +679,13 @@ export function TaskDetailSheet({
             <Button
               variant="ghost"
               label="Open in Moodle"
-              icon={<Feather name="external-link" size={16} color={colors.text.secondary} />}
+              icon={
+                <Feather
+                  name="external-link"
+                  size={16}
+                  color={colors.text.secondary}
+                />
+              }
               onPress={handleOpenUrl}
               style={styles.actionBtn}
             />
@@ -467,7 +694,13 @@ export function TaskDetailSheet({
             <Button
               variant="ghost"
               label="Convert to Note"
-              icon={<Feather name="file-text" size={16} color={colors.text.secondary} />}
+              icon={
+                <Feather
+                  name="file-text"
+                  size={16}
+                  color={colors.text.secondary}
+                />
+              }
               onPress={async () => {
                 await updateTask(task.id, { is_note: true });
                 sheetRef.current?.close();
@@ -479,7 +712,10 @@ export function TaskDetailSheet({
             variant="danger"
             label="Delete Task"
             icon={<Feather name="trash-2" size={16} color={colors.danger} />}
-            onPress={() => { deleteTask(task.id); sheetRef.current?.close(); }}
+            onPress={() => {
+              deleteTask(task.id);
+              sheetRef.current?.close();
+            }}
             style={styles.actionBtn}
           />
         </View>
@@ -497,23 +733,25 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing[4],
     paddingBottom: 48,
-    ...Platform.select({ web: { maxWidth: 600, alignSelf: 'center' as const, width: '100%' } }),
+    ...Platform.select({
+      web: { maxWidth: 600, alignSelf: "center" as const, width: "100%" },
+    }),
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: spacing[3],
     paddingVertical: spacing[3],
   },
   title: {
     flex: 1,
     fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text.primary,
     lineHeight: fontSize.lg * 1.4,
   },
   titleDone: {
-    textDecorationLine: 'line-through',
+    textDecorationLine: "line-through",
     opacity: 0.45,
   },
   titleInput: {
@@ -537,15 +775,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing[2],
   },
   metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing[2],
     paddingBottom: spacing[3],
-    alignItems: 'center',
+    alignItems: "center",
   },
   metaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     backgroundColor: colors.bg.elevated,
     borderRadius: radius.full,
@@ -583,48 +821,48 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.secondary,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.8,
   },
   sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   labelIconBtn: {
     width: 28,
     height: 28,
     borderRadius: radius.full,
-    backgroundColor: colors.accent.soft ?? (colors.accent.default + '18'),
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.accent.soft ?? colors.accent.default + "18",
+    alignItems: "center",
+    justifyContent: "center",
   },
   chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing[2],
     marginTop: spacing[2],
   },
   addChipBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.border.subtle,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
   },
   addChipText: {
     fontSize: fontSize.sm,
     color: colors.text.tertiary,
   },
   addSubtask: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing[2],
     paddingVertical: spacing[2],
     borderTopWidth: 1,
@@ -638,8 +876,8 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   notePreview: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: spacing[2],
   },
   noteText: {
@@ -651,7 +889,7 @@ const styles = StyleSheet.create({
   notePlaceholder: {
     fontSize: fontSize.base,
     color: colors.text.tertiary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     flex: 1,
   },
   attachmentList: {
@@ -659,7 +897,7 @@ const styles = StyleSheet.create({
     marginTop: spacing[1],
   },
   attActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing[2],
   },
   attActionBtn: {
@@ -667,15 +905,15 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: radius.md,
     backgroundColor: colors.bg.elevated,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.border.subtle,
   },
   emptyAtt: {
     fontSize: fontSize.sm,
     color: colors.text.tertiary,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     marginTop: spacing[1],
   },
   actions: {
@@ -683,6 +921,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing[4],
   },
   actionBtn: {
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
   },
 });

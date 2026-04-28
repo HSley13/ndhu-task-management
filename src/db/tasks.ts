@@ -1,35 +1,35 @@
-import * as SQLite from 'expo-sqlite';
-import { uuidv4 } from '../utils/uuid';
-import { format, fromUnixTime } from 'date-fns';
-import type { Task, RawAssignment, TaskFull } from '../types';
-import { getLabelsForTask } from './labels';
-import { getSubtasksForTask } from './subtasks';
-import { getAttachmentsForTask } from './attachments';
-import { getRemindersForTask } from './reminders';
+import * as SQLite from "expo-sqlite";
+import { uuidv4 } from "../utils/uuid";
+import { format, fromUnixTime } from "date-fns";
+import type { Task, RawAssignment, TaskFull } from "../types";
+import { getLabelsForTask } from "./labels";
+import { getSubtasksForTask } from "./subtasks";
+import { getAttachmentsForTask } from "./attachments";
+import { getRemindersForTask } from "./reminders";
 
 function rowToTask(row: Record<string, unknown>): Task {
   return {
-    id:               row['id'] as string,
-    title:            row['title'] as string,
-    course:           (row['course'] as string | null) ?? null,
-    due_date:         (row['due_date'] as string | null) ?? null,
-    due_time:         (row['due_time'] as string | null) ?? null,
-    source:           (row['source'] as Task['source']) ?? 'manual',
-    status:           (row['status'] as Task['status']) ?? 'pending',
-    is_pinned:        Boolean(row['is_pinned']),
-    is_note:          Boolean(row['is_note']),
-    note_content:     (row['note_content'] as string | null) ?? null,
-    moodle_url:       (row['moodle_url'] as string | null) ?? null,
-    moodle_event_id:  (row['moodle_event_id'] as number | null) ?? null,
-    postponed_until:  (row['postponed_until'] as string | null) ?? null,
-    created_at:       row['created_at'] as string,
-    updated_at:       row['updated_at'] as string,
+    id: row["id"] as string,
+    title: row["title"] as string,
+    course: (row["course"] as string | null) ?? null,
+    due_date: (row["due_date"] as string | null) ?? null,
+    due_time: (row["due_time"] as string | null) ?? null,
+    source: (row["source"] as Task["source"]) ?? "manual",
+    status: (row["status"] as Task["status"]) ?? "pending",
+    is_pinned: Boolean(row["is_pinned"]),
+    is_note: Boolean(row["is_note"]),
+    note_content: (row["note_content"] as string | null) ?? null,
+    moodle_url: (row["moodle_url"] as string | null) ?? null,
+    moodle_event_id: (row["moodle_event_id"] as number | null) ?? null,
+    postponed_until: (row["postponed_until"] as string | null) ?? null,
+    created_at: row["created_at"] as string,
+    updated_at: row["updated_at"] as string,
   };
 }
 
 export async function insertTask(
   db: SQLite.SQLiteDatabase,
-  data: Omit<Task, 'id' | 'created_at' | 'updated_at'>,
+  data: Omit<Task, "id" | "created_at" | "updated_at">,
 ): Promise<Task> {
   const id = uuidv4();
   const now = new Date().toISOString();
@@ -55,16 +55,17 @@ export async function insertTask(
     now,
   );
   const row = await db.getFirstAsync<Record<string, unknown>>(
-    'SELECT * FROM tasks WHERE id = ?', id,
+    "SELECT * FROM tasks WHERE id = ?",
+    id,
   );
-  if (!row) throw new Error('insertTask: row not found after insert');
+  if (!row) throw new Error("insertTask: row not found after insert");
   return rowToTask(row);
 }
 
 export async function updateTask(
   db: SQLite.SQLiteDatabase,
   id: string,
-  patch: Partial<Omit<Task, 'id' | 'created_at'>>,
+  patch: Partial<Omit<Task, "id" | "created_at">>,
 ): Promise<Task> {
   const now = new Date().toISOString();
   const fields: string[] = [];
@@ -75,41 +76,49 @@ export async function updateTask(
     values.push(val);
   };
 
-  if (patch.title            !== undefined) set('title',           patch.title);
-  if (patch.course           !== undefined) set('course',          patch.course ?? null);
-  if (patch.due_date         !== undefined) set('due_date',        patch.due_date ?? null);
-  if (patch.due_time         !== undefined) set('due_time',        patch.due_time ?? null);
-  if (patch.source           !== undefined) set('source',          patch.source);
-  if (patch.status           !== undefined) set('status',          patch.status);
-  if (patch.is_pinned        !== undefined) set('is_pinned',       patch.is_pinned ? 1 : 0);
-  if (patch.is_note          !== undefined) set('is_note',         patch.is_note ? 1 : 0);
-  if (patch.note_content     !== undefined) set('note_content',    patch.note_content ?? null);
-  if (patch.moodle_url       !== undefined) set('moodle_url',      patch.moodle_url ?? null);
-  if (patch.moodle_event_id  !== undefined) set('moodle_event_id', patch.moodle_event_id ?? null);
-  if (patch.postponed_until  !== undefined) set('postponed_until', patch.postponed_until ?? null);
-  if (patch.updated_at       !== undefined) set('updated_at',      patch.updated_at);
-  else set('updated_at', now);
+  if (patch.title !== undefined) set("title", patch.title);
+  if (patch.course !== undefined) set("course", patch.course ?? null);
+  if (patch.due_date !== undefined) set("due_date", patch.due_date ?? null);
+  if (patch.due_time !== undefined) set("due_time", patch.due_time ?? null);
+  if (patch.source !== undefined) set("source", patch.source);
+  if (patch.status !== undefined) set("status", patch.status);
+  if (patch.is_pinned !== undefined) set("is_pinned", patch.is_pinned ? 1 : 0);
+  if (patch.is_note !== undefined) set("is_note", patch.is_note ? 1 : 0);
+  if (patch.note_content !== undefined)
+    set("note_content", patch.note_content ?? null);
+  if (patch.moodle_url !== undefined)
+    set("moodle_url", patch.moodle_url ?? null);
+  if (patch.moodle_event_id !== undefined)
+    set("moodle_event_id", patch.moodle_event_id ?? null);
+  if (patch.postponed_until !== undefined)
+    set("postponed_until", patch.postponed_until ?? null);
+  if (patch.updated_at !== undefined) set("updated_at", patch.updated_at);
+  else set("updated_at", now);
 
   if (fields.length === 0) {
     const existing = await getTaskById(db, id);
-    if (!existing) throw new Error('updateTask: task not found');
+    if (!existing) throw new Error("updateTask: task not found");
     return existing;
   }
 
   values.push(id);
   await db.runAsync(
-    `UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`,
+    `UPDATE tasks SET ${fields.join(", ")} WHERE id = ?`,
     ...values,
   );
   const row = await db.getFirstAsync<Record<string, unknown>>(
-    'SELECT * FROM tasks WHERE id = ?', id,
+    "SELECT * FROM tasks WHERE id = ?",
+    id,
   );
-  if (!row) throw new Error('updateTask: row not found after update');
+  if (!row) throw new Error("updateTask: row not found after update");
   return rowToTask(row);
 }
 
-export async function deleteTask(db: SQLite.SQLiteDatabase, id: string): Promise<void> {
-  await db.runAsync('DELETE FROM tasks WHERE id = ?', id);
+export async function deleteTask(
+  db: SQLite.SQLiteDatabase,
+  id: string,
+): Promise<void> {
+  await db.runAsync("DELETE FROM tasks WHERE id = ?", id);
 }
 
 export async function getTaskById(
@@ -117,7 +126,8 @@ export async function getTaskById(
   id: string,
 ): Promise<Task | null> {
   const row = await db.getFirstAsync<Record<string, unknown>>(
-    'SELECT * FROM tasks WHERE id = ?', id,
+    "SELECT * FROM tasks WHERE id = ?",
+    id,
   );
   return row ? rowToTask(row) : null;
 }
@@ -177,8 +187,8 @@ export async function upsertMoodleTask(
   db: SQLite.SQLiteDatabase,
   raw: RawAssignment,
 ): Promise<{ task: Task; isNew: boolean }> {
-  const dueDate = format(fromUnixTime(raw.due_unix), 'yyyy-MM-dd');
-  const dueTime = format(fromUnixTime(raw.due_unix), 'HH:mm');
+  const dueDate = format(fromUnixTime(raw.due_unix), "yyyy-MM-dd");
+  const dueTime = format(fromUnixTime(raw.due_unix), "HH:mm");
   const now = new Date().toISOString();
   const id = uuidv4();
 
@@ -201,9 +211,11 @@ export async function upsertMoodleTask(
 
   if (result.changes > 0) {
     const row = await db.getFirstAsync<Record<string, unknown>>(
-      'SELECT * FROM tasks WHERE id = ?', id,
+      "SELECT * FROM tasks WHERE id = ?",
+      id,
     );
-    if (!row) throw new Error('upsertMoodleTask: insert succeeded but row not found');
+    if (!row)
+      throw new Error("upsertMoodleTask: insert succeeded but row not found");
     return { task: rowToTask(row), isNew: true };
   }
 
@@ -221,9 +233,10 @@ export async function upsertMoodleTask(
     raw.id,
   );
   const row = await db.getFirstAsync<Record<string, unknown>>(
-    'SELECT * FROM tasks WHERE moodle_event_id = ?', raw.id,
+    "SELECT * FROM tasks WHERE moodle_event_id = ?",
+    raw.id,
   );
-  if (!row) throw new Error('upsertMoodleTask: row not found after update');
+  if (!row) throw new Error("upsertMoodleTask: row not found after update");
   return { task: rowToTask(row), isNew: false };
 }
 

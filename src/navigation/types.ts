@@ -1,6 +1,9 @@
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import type { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/native';
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type {
+  CompositeScreenProps,
+  NavigatorScreenParams,
+} from "@react-navigation/native";
 
 // ─── Calendar Stack ────────────────────────────────────────────────────────────
 export type CalendarStackParamList = {
@@ -23,16 +26,16 @@ export type NotesStackParamList = {
 
 // ─── App Tabs ──────────────────────────────────────────────────────────────────
 export type AppTabsParamList = {
-  CalendarTab:  NavigatorScreenParams<CalendarStackParamList>;
-  ListTab:      NavigatorScreenParams<ListStackParamList>;
-  NotesTab:     NavigatorScreenParams<NotesStackParamList>;
-  SettingsTab:  undefined;
+  CalendarTab: NavigatorScreenParams<CalendarStackParamList>;
+  ListTab: NavigatorScreenParams<ListStackParamList>;
+  NotesTab: NavigatorScreenParams<NotesStackParamList>;
+  SettingsTab: undefined;
 };
 
 // ─── Root Navigator ────────────────────────────────────────────────────────────
 export type RootStackParamList = {
   Login: undefined;
-  App:   NavigatorScreenParams<AppTabsParamList>;
+  App: NavigatorScreenParams<AppTabsParamList>;
 };
 
 // ─── Convenience screen prop types ────────────────────────────────────────────

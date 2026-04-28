@@ -1,25 +1,30 @@
-import { create } from 'zustand';
-import { Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
-import { login as apiLogin, refreshToken, logout as apiLogout, ApiError } from '../services/api';
+import { create } from "zustand";
+import { Platform } from "react-native";
+import * as SecureStore from "expo-secure-store";
+import {
+  login as apiLogin,
+  refreshToken,
+  logout as apiLogout,
+  ApiError,
+} from "../services/api";
 
 // expo-secure-store is native-only. On web fall back to localStorage.
 const storage = {
   async set(key: string, value: string) {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       localStorage.setItem(key, value);
     } else {
       await SecureStore.setItemAsync(key, value);
     }
   },
   async get(key: string): Promise<string | null> {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       return localStorage.getItem(key);
     }
     return SecureStore.getItemAsync(key);
   },
   async del(key: string) {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       localStorage.removeItem(key);
     } else {
       await SecureStore.deleteItemAsync(key);
@@ -27,8 +32,8 @@ const storage = {
   },
 };
 
-const JWT_KEY = 'ndhu_jwt';
-const STUDENT_ID_KEY = 'ndhu_student_id';
+const JWT_KEY = "ndhu_jwt";
+const STUDENT_ID_KEY = "ndhu_student_id";
 
 interface AuthStore {
   jwt: string | null;
@@ -58,14 +63,22 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       await storage.set(JWT_KEY, jwt);
       await storage.set(STUDENT_ID_KEY, student_id);
 
-      set({ jwt, student_id, is_logged_in: true, is_loading: false, error: null });
+      set({
+        jwt,
+        student_id,
+        is_logged_in: true,
+        is_loading: false,
+        error: null,
+      });
 
       // Sync assignments in background
-      const { syncAssignments } = await import('../services/sync');
-      syncAssignments(jwt).catch((err) => console.warn('[auth] syncAssignments error:', err));
+      const { syncAssignments } = await import("../services/sync");
+      syncAssignments(jwt).catch((err) =>
+        console.warn("[auth] syncAssignments error:", err),
+      );
     } catch (e) {
       const msg = (e as Error).message;
-      console.error('[auth] login error:', msg, e);
+      console.error("[auth] login error:", msg, e);
       set({ is_loading: false, error: msg, is_logged_in: false });
       throw e;
     }
@@ -86,7 +99,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ is_loading: true });
     try {
       const storedJwt = await storage.get(JWT_KEY);
-      const storedId  = await storage.get(STUDENT_ID_KEY);
+      const storedId = await storage.get(STUDENT_ID_KEY);
 
       if (!storedJwt) {
         set({ is_loading: false, is_logged_in: false });
@@ -96,15 +109,30 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       try {
         const { jwt: newJwt } = await refreshToken(storedJwt);
         await storage.set(JWT_KEY, newJwt);
-        set({ jwt: newJwt, student_id: storedId, is_logged_in: true, is_loading: false });
+        set({
+          jwt: newJwt,
+          student_id: storedId,
+          is_logged_in: true,
+          is_loading: false,
+        });
       } catch (e) {
         if (e instanceof ApiError && e.isRevoked) {
           await storage.del(JWT_KEY).catch(() => undefined);
           await storage.del(STUDENT_ID_KEY).catch(() => undefined);
-          set({ jwt: null, student_id: null, is_logged_in: false, is_loading: false });
+          set({
+            jwt: null,
+            student_id: null,
+            is_logged_in: false,
+            is_loading: false,
+          });
         } else {
           // Network error — keep existing JWT for offline access
-          set({ jwt: storedJwt, student_id: storedId, is_logged_in: true, is_loading: false });
+          set({
+            jwt: storedJwt,
+            student_id: storedId,
+            is_logged_in: true,
+            is_loading: false,
+          });
         }
       }
     } catch {
@@ -115,6 +143,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   handleRevocation() {
     storage.del(JWT_KEY).catch(() => undefined);
     storage.del(STUDENT_ID_KEY).catch(() => undefined);
-    set({ jwt: null, student_id: null, is_logged_in: false, error: 'Session expired. Please log in again.' });
+    set({
+      jwt: null,
+      student_id: null,
+      is_logged_in: false,
+      error: "Session expired. Please log in again.",
+    });
   },
 }));

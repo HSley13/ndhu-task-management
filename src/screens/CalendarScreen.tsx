@@ -1,29 +1,35 @@
-import React, { useRef, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, TouchableOpacity } from 'react-native';
-import { TouchableOpacity as GHTouchableOpacity } from 'react-native-gesture-handler';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { Calendar } from 'react-native-calendars';
-import type { DateData } from 'react-native-calendars';
-import { format } from 'date-fns';
-import { Feather } from '@expo/vector-icons';
-import BottomSheet, { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useTaskStore } from '../store/useTaskStore';
-import { useLabelStore } from '../store/useLabelStore';
-import { colors, spacing, radius, fontSize } from '../theme';
-import { isOverdue } from '../utils/date';
-import { AddTaskSheet } from '../components/sheets/AddTaskSheet';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { CalendarStackParamList } from '../navigation/types';
+import React, { useRef, useState, useMemo } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  TouchableOpacity,
+} from "react-native";
+import { TouchableOpacity as GHTouchableOpacity } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { Calendar } from "react-native-calendars";
+import type { DateData } from "react-native-calendars";
+import { format } from "date-fns";
+import { Feather } from "@expo/vector-icons";
+import BottomSheet, { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { useTaskStore } from "../store/useTaskStore";
+import { useLabelStore } from "../store/useLabelStore";
+import { colors, spacing, radius, fontSize } from "../theme";
+import { isOverdue } from "../utils/date";
+import { AddTaskSheet } from "../components/sheets/AddTaskSheet";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import type { CalendarStackParamList } from "../navigation/types";
 
-type Props = NativeStackScreenProps<CalendarStackParamList, 'Calendar'>;
+type Props = NativeStackScreenProps<CalendarStackParamList, "Calendar">;
 
 export function CalendarScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { tasks } = useTaskStore();
   const { labels } = useLabelStore();
-  const [selected, setSelected] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [selected, setSelected] = useState(format(new Date(), "yyyy-MM-dd"));
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const addSheetRef = useRef<BottomSheetModal>(null);
 
@@ -32,10 +38,10 @@ export function CalendarScreen({ navigation }: Props) {
     const map: Record<string, any> = {};
     tasks.forEach((task) => {
       if (!task.due_date) return;
-      const taskLabels = labels.filter((l) =>
-        task.status !== 'done'
-      );
-      const dots = taskLabels.slice(0, 3).map((l) => ({ color: l.color, key: l.id }));
+      const taskLabels = labels.filter((l) => task.status !== "done");
+      const dots = taskLabels
+        .slice(0, 3)
+        .map((l) => ({ color: l.color, key: l.id }));
       const dotColor = isOverdue(task) ? colors.danger : colors.accent.default;
       if (!map[task.due_date]) {
         map[task.due_date] = { dots: [] };
@@ -49,50 +55,55 @@ export function CalendarScreen({ navigation }: Props) {
     } else {
       map[selected] = { selected: true };
     }
-    map[selected].selectedColor = colors.accent.default + '44';
+    map[selected].selectedColor = colors.accent.default + "44";
 
     return map;
   }, [tasks, selected]);
 
   function handleDayPress(day: DateData) {
     setSelected(day.dateString);
-    navigation.navigate('DayDetail', { date: day.dateString });
+    navigation.navigate("DayDetail", { date: day.dateString });
   }
 
-  const todayString = format(new Date(), 'yyyy-MM-dd');
+  const todayString = format(new Date(), "yyyy-MM-dd");
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.heading}>Calendar</Text>
-        <GHTouchableOpacity onPress={() => handleDayPress({ dateString: todayString } as DateData)} activeOpacity={0.7}>
+        <GHTouchableOpacity
+          onPress={() =>
+            handleDayPress({ dateString: todayString } as DateData)
+          }
+          activeOpacity={0.7}
+        >
           <Text style={styles.todayBtn}>Today</Text>
         </GHTouchableOpacity>
       </View>
 
       <Calendar
-          current={todayString}
-          onDayPress={handleDayPress}
-          markingType="multi-dot"
-          markedDates={markedDates}
-          theme={{
-            backgroundColor: colors.bg.base,
-            calendarBackground: colors.bg.base,
-            textSectionTitleColor: colors.text.tertiary,
-            dayTextColor: colors.text.primary,
-            todayTextColor: colors.accent.default,
-            selectedDayBackgroundColor: colors.accent.muted,
-            selectedDayTextColor: colors.accent.default,
-            monthTextColor: colors.text.primary,
-            arrowColor: colors.accent.default,
-            dotColor: colors.accent.default,
-            textDisabledColor: colors.text.tertiary,
-            textDayFontSize: fontSize.base,
-            textMonthFontSize: fontSize.md,
-            textDayHeaderFontSize: fontSize.xs,
-          }}
-          style={[styles.calendar]}
-        />
+        current={todayString}
+        onDayPress={handleDayPress}
+        markingType="multi-dot"
+        markedDates={markedDates}
+        theme={{
+          backgroundColor: colors.bg.base,
+          calendarBackground: colors.bg.base,
+          textSectionTitleColor: colors.text.tertiary,
+          dayTextColor: colors.text.primary,
+          todayTextColor: colors.accent.default,
+          selectedDayBackgroundColor: colors.accent.muted,
+          selectedDayTextColor: colors.accent.default,
+          monthTextColor: colors.text.primary,
+          arrowColor: colors.accent.default,
+          dotColor: colors.accent.default,
+          textDisabledColor: colors.text.tertiary,
+          textDayFontSize: fontSize.base,
+          textMonthFontSize: fontSize.md,
+          textDayHeaderFontSize: fontSize.xs,
+        }}
+        style={[styles.calendar]}
+      />
 
       {/* FAB */}
       <TouchableOpacity
@@ -109,29 +120,49 @@ export function CalendarScreen({ navigation }: Props) {
           style={styles.menuOverlay}
           onPress={() => setShowCreateMenu(false)}
         >
-          <View style={[styles.createMenu, { bottom: tabBarHeight + spacing[4] + 64 }]}>
+          <View
+            style={[
+              styles.createMenu,
+              { bottom: tabBarHeight + spacing[4] + 64 },
+            ]}
+          >
             <Pressable
               style={styles.menuItem}
-              onPress={() => { setShowCreateMenu(false); addSheetRef.current?.present(); }}
+              onPress={() => {
+                setShowCreateMenu(false);
+                addSheetRef.current?.present();
+              }}
             >
-              <View style={[styles.menuIcon, { backgroundColor: colors.accent.default }]}>
+              <View
+                style={[
+                  styles.menuIcon,
+                  { backgroundColor: colors.accent.default },
+                ]}
+              >
                 <Feather name="check-square" size={18} color="#fff" />
               </View>
               <View>
                 <Text style={styles.menuLabel}>Task</Text>
-                <Text style={styles.menuSub}>With due date &amp; reminders</Text>
+                <Text style={styles.menuSub}>
+                  With due date &amp; reminders
+                </Text>
               </View>
             </Pressable>
             <Pressable
               style={styles.menuItem}
-              onPress={() => { setShowCreateMenu(false); navigation.navigate('NoteEditor'); }}
+              onPress={() => {
+                setShowCreateMenu(false);
+                navigation.navigate("NoteEditor");
+              }}
             >
-              <View style={[styles.menuIcon, { backgroundColor: '#22D3A5' }]}>
+              <View style={[styles.menuIcon, { backgroundColor: "#22D3A5" }]}>
                 <Feather name="file-text" size={18} color="#fff" />
               </View>
               <View>
                 <Text style={styles.menuLabel}>Note</Text>
-                <Text style={styles.menuSub}>Free-form text &amp; formatting</Text>
+                <Text style={styles.menuSub}>
+                  Free-form text &amp; formatting
+                </Text>
               </View>
             </Pressable>
           </View>
@@ -149,37 +180,37 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.base,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[2],
   },
   heading: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: "800",
     color: colors.text.primary,
     letterSpacing: -0.5,
   },
   todayBtn: {
     fontSize: fontSize.sm,
     color: colors.accent.default,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   calendar: {
     borderRadius: radius.lg,
     marginHorizontal: spacing[4],
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: spacing[5],
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.accent.default,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -191,14 +222,14 @@ const styles = StyleSheet.create({
     zIndex: 50,
   },
   createMenu: {
-    position: 'absolute',
+    position: "absolute",
     right: spacing[5],
     backgroundColor: colors.bg.surface,
     borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.border.subtle,
     paddingVertical: spacing[2],
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
@@ -206,8 +237,8 @@ const styles = StyleSheet.create({
     minWidth: 240,
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing[3],
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
@@ -216,12 +247,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   menuLabel: {
     fontSize: fontSize.base,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text.primary,
   },
   menuSub: {

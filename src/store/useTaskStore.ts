@@ -1,11 +1,17 @@
-import { create } from 'zustand';
-import type { Task, TaskFull, RawAssignment, Attachment, Subtask } from '../types';
-import { getDb } from '../db/client';
-import * as tasksDb from '../db/tasks';
-import * as labelsDb from '../db/labels';
-import * as subtasksDb from '../db/subtasks';
-import * as attachmentsDb from '../db/attachments';
-import * as remindersDb from '../db/reminders';
+import { create } from "zustand";
+import type {
+  Task,
+  TaskFull,
+  RawAssignment,
+  Attachment,
+  Subtask,
+} from "../types";
+import { getDb } from "../db/client";
+import * as tasksDb from "../db/tasks";
+import * as labelsDb from "../db/labels";
+import * as subtasksDb from "../db/subtasks";
+import * as attachmentsDb from "../db/attachments";
+import * as remindersDb from "../db/reminders";
 
 interface TaskStore {
   tasks: Task[];
@@ -14,7 +20,7 @@ interface TaskStore {
   error: string | null;
 
   loadTasks(): Promise<void>;
-  addTask(data: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<Task>;
+  addTask(data: Omit<Task, "id" | "created_at" | "updated_at">): Promise<Task>;
   updateTask(id: string, patch: Partial<Task>): Promise<void>;
   deleteTask(id: string): Promise<void>;
   toggleDone(id: string): Promise<void>;
@@ -30,7 +36,10 @@ interface TaskStore {
 
   setTaskLabels(task_id: string, label_ids: string[]): Promise<void>;
 
-  addAttachment(task_id: string, attachment: Omit<Attachment, 'id'>): Promise<void>;
+  addAttachment(
+    task_id: string,
+    attachment: Omit<Attachment, "id">,
+  ): Promise<void>;
   deleteAttachment(attachment_id: string): Promise<void>;
 
   addReminder(task_id: string, offset_minutes: number): Promise<void>;
@@ -66,7 +75,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const updated = await tasksDb.updateTask(db, id, patch);
     set((s) => ({
       tasks: s.tasks.map((t) => (t.id === id ? updated : t)),
-      openTask: s.openTask?.id === id ? { ...s.openTask, ...updated } : s.openTask,
+      openTask:
+        s.openTask?.id === id ? { ...s.openTask, ...updated } : s.openTask,
     }));
   },
 
@@ -82,7 +92,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   async toggleDone(id) {
     const task = get().tasks.find((t) => t.id === id);
     if (!task) return;
-    const newStatus: Task['status'] = task.status === 'done' ? 'pending' : 'done';
+    const newStatus: Task["status"] =
+      task.status === "done" ? "pending" : "done";
     await get().updateTask(id, { status: newStatus });
   },
 
@@ -93,7 +104,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   async postponeTask(id, due_date, due_time) {
-    await get().updateTask(id, { due_date, due_time, status: 'postponed' });
+    await get().updateTask(id, { due_date, due_time, status: "postponed" });
   },
 
   async openTaskDetail(id) {
@@ -124,7 +135,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const subtask = await subtasksDb.insertSubtask(db, task_id, title);
     set((s) => {
       if (!s.openTask || s.openTask.id !== task_id) return s;
-      return { openTask: { ...s.openTask, subtasks: [...s.openTask.subtasks, subtask] } };
+      return {
+        openTask: {
+          ...s.openTask,
+          subtasks: [...s.openTask.subtasks, subtask],
+        },
+      };
     });
   },
 
@@ -133,13 +149,17 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const subtask = openTask?.subtasks.find((st) => st.id === subtask_id);
     if (!subtask) return;
     const db = await getDb();
-    const updated = await subtasksDb.updateSubtask(db, subtask_id, { done: !subtask.done });
+    const updated = await subtasksDb.updateSubtask(db, subtask_id, {
+      done: !subtask.done,
+    });
     set((s) => {
       if (!s.openTask) return s;
       return {
         openTask: {
           ...s.openTask,
-          subtasks: s.openTask.subtasks.map((st) => (st.id === subtask_id ? updated : st)),
+          subtasks: s.openTask.subtasks.map((st) =>
+            st.id === subtask_id ? updated : st,
+          ),
         },
       };
     });
@@ -174,7 +194,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const att = await attachmentsDb.insertAttachment(db, attachment);
     set((s) => {
       if (!s.openTask || s.openTask.id !== task_id) return s;
-      return { openTask: { ...s.openTask, attachments: [...s.openTask.attachments, att] } };
+      return {
+        openTask: {
+          ...s.openTask,
+          attachments: [...s.openTask.attachments, att],
+        },
+      };
     });
   },
 
@@ -186,7 +211,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       return {
         openTask: {
           ...s.openTask,
-          attachments: s.openTask.attachments.filter((a) => a.id !== attachment_id),
+          attachments: s.openTask.attachments.filter(
+            (a) => a.id !== attachment_id,
+          ),
         },
       };
     });
@@ -196,11 +223,17 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const db = await getDb();
     const task = get().tasks.find((t) => t.id === task_id);
     if (!task) return;
-    const { scheduleRemindersForTask } = await import('../services/notifications');
+    const { scheduleRemindersForTask } =
+      await import("../services/notifications");
     const created = await scheduleRemindersForTask(task, [offset_minutes]);
     set((s) => {
       if (!s.openTask || s.openTask.id !== task_id) return s;
-      return { openTask: { ...s.openTask, reminders: [...s.openTask.reminders, ...created] } };
+      return {
+        openTask: {
+          ...s.openTask,
+          reminders: [...s.openTask.reminders, ...created],
+        },
+      };
     });
   },
 
@@ -209,8 +242,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const { openTask } = get();
     const reminder = openTask?.reminders.find((r) => r.id === reminder_id);
     if (reminder?.expo_notification_id) {
-      const { Notifications } = await import('../services/notificationsShim');
-      await Notifications?.cancelScheduledNotificationAsync(reminder.expo_notification_id);
+      const { Notifications } = await import("../services/notificationsShim");
+      await Notifications?.cancelScheduledNotificationAsync(
+        reminder.expo_notification_id,
+      );
     }
     await remindersDb.deleteRemindersForTask(db, reminder_id);
     set((s) => {

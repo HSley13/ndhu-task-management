@@ -1,14 +1,21 @@
-import React from 'react';
-import { Pressable, Text, StyleSheet, ActivityIndicator, type StyleProp, type ViewStyle } from 'react-native';
+import React from "react";
+import {
+  Pressable,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-} from 'react-native-reanimated';
-import { colors, fontSize, spacing, radius } from '../../theme';
-import { useHaptics } from '../../hooks/useHaptics';
+} from "react-native-reanimated";
+import { colors, fontSize, spacing, radius } from "../../theme";
+import { useHaptics } from "../../hooks/useHaptics";
 
-type ButtonVariant = 'primary' | 'ghost' | 'danger';
+type ButtonVariant = "primary" | "ghost" | "danger";
 
 interface ButtonProps {
   variant?: ButtonVariant;
@@ -23,7 +30,7 @@ interface ButtonProps {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function Button({
-  variant = 'primary',
+  variant = "primary",
   label,
   onPress,
   loading = false,
@@ -51,18 +58,18 @@ export function Button({
 
   const containerStyle = [
     styles.base,
-    variant === 'primary' && styles.primary,
-    variant === 'ghost'   && styles.ghost,
-    variant === 'danger'  && styles.danger,
+    variant === "primary" && styles.primary,
+    variant === "ghost" && styles.ghost,
+    variant === "danger" && styles.danger,
     (disabled || loading) && styles.disabled,
     style,
   ];
 
   const textStyle = [
     styles.label,
-    variant === 'primary' && styles.labelPrimary,
-    variant === 'ghost'   && styles.labelGhost,
-    variant === 'danger'  && styles.labelDanger,
+    variant === "primary" && styles.labelPrimary,
+    variant === "ghost" && styles.labelGhost,
+    variant === "danger" && styles.labelDanger,
   ];
 
   return (
@@ -76,7 +83,7 @@ export function Button({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' ? '#fff' : colors.accent.default}
+          color={variant === "primary" ? "#fff" : colors.accent.default}
         />
       ) : (
         <>
@@ -90,26 +97,26 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: spacing[2],
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[6],
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   primary: {
     backgroundColor: colors.accent.default,
     borderColor: colors.accent.default,
   },
   ghost: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderColor: colors.border.default,
   },
   danger: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderColor: colors.danger,
   },
   disabled: {
@@ -117,10 +124,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: fontSize.base,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   labelPrimary: {
-    color: '#fff',
+    color: "#fff",
   },
   labelGhost: {
     color: colors.text.primary,

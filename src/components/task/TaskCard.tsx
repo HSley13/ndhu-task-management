@@ -1,8 +1,8 @@
-import React from 'react';
-import { Pressable, View, Text, StyleSheet } from 'react-native';
-import { colors, spacing, radius, fontSize } from '../../theme';
-import type { Task, Label } from '../../types';
-import { formatDueTime } from '../../utils/date';
+import React from "react";
+import { Pressable, View, Text, StyleSheet } from "react-native";
+import { colors, spacing, radius, fontSize } from "../../theme";
+import type { Task, Label } from "../../types";
+import { formatDueTime } from "../../utils/date";
 
 interface TaskCardProps {
   task: Task;
@@ -24,7 +24,10 @@ export function TaskCard({ task, labels, onPress }: TaskCardProps) {
   const course = shortCourse(task.course);
 
   return (
-    <Pressable style={[styles.card, { borderLeftColor: barColor }]} onPress={onPress}>
+    <Pressable
+      style={[styles.card, { borderLeftColor: barColor }]}
+      onPress={onPress}
+    >
       <Text style={styles.title} numberOfLines={1}>
         {task.title}
       </Text>
@@ -47,18 +50,18 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[2],
-    justifyContent: 'center',
+    justifyContent: "center",
     marginBottom: spacing[1],
     gap: 2,
   },
   title: {
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
   },
   course: {
     fontSize: fontSize.xs,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.accent.default,
   },
   time: {

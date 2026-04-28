@@ -9,4 +9,5 @@
  * NOTE: expo-notifications crashes in Expo Go SDK 53+ at module load time.
  * Run `npx expo run:android` (development build) to use notifications.
  */
-export const Notifications = require('expo-notifications') as typeof import('expo-notifications');
+export const Notifications =
+  require("expo-notifications") as typeof import("expo-notifications");

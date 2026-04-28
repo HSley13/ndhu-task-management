@@ -60,8 +60,7 @@ A mobile task management app for NDHU students. Syncs assignments directly from 
 | Notifications | expo-notifications                                                          |
 | File handling | expo-file-system, expo-document-picker, expo-image-picker                   |
 | Auth          | NDHU Moodle credentials (password never stored)                             |
-| Crypto        | node-forge — RSA-OAEP-SHA256 + AES-256-GCM hybrid encryption               |
-| Backend       | Drogon C++ REST API                                                         |
+| Crypto        | node-forge — RSA-OAEP-SHA256 + AES-256-GCM hybrid encryption                |
 
 ## Password Security
 
@@ -76,12 +75,12 @@ Every time you log in the app performs hybrid encryption entirely on-device befo
 
 On the server side the password is decrypted in memory, used once to authenticate with Moodle, and immediately discarded. What gets stored in the database is the resulting **Moodle session token**, itself encrypted again with a server-side AES-256-GCM key that lives only in the server's environment variables.
 
-| Threat | Why you're safe |
-|---|---|
-| Network interception | Only RSA-OAEP ciphertext is on the wire — unreadable without the server's private key |
-| Server database breach | Passwords are not in the database at all |
-| App storage inspection | The app stores only the JWT issued after login, never any credential |
-| Replay attack | The AES session key is regenerated fresh on every login, so captured traffic cannot be replayed |
+| Threat                 | Why you're safe                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| Network interception   | Only RSA-OAEP ciphertext is on the wire — unreadable without the server's private key           |
+| Server database breach | Passwords are not in the database at all                                                        |
+| App storage inspection | The app stores only the JWT issued after login, never any credential                            |
+| Replay attack          | The AES session key is regenerated fresh on every login, so captured traffic cannot be replayed |
 
 ## Getting Started
 
@@ -94,3 +93,7 @@ npx expo start
 Scan the QR code with the **Expo Go** app (iOS/Android) or press `i` / `a` to open in a simulator.
 
 > Requires a valid NDHU student account to log in.
+
+## References
+
+- [Elearn-Assist](https://github.com/Ake3m/Elearn-Assist) — a similar e-learning assistant project that served as a reference for this work

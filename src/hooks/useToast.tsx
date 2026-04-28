@@ -1,16 +1,22 @@
-import React, { createContext, useContext, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import React, {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
+import { View, Text, StyleSheet, Platform } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
   runOnJS,
-} from 'react-native-reanimated';
-import EventEmitter from 'eventemitter3';
-import { colors, spacing, radius, fontSize } from '../theme';
+} from "react-native-reanimated";
+import EventEmitter from "eventemitter3";
+import { colors, spacing, radius, fontSize } from "../theme";
 
-export type ToastType = 'success' | 'error' | 'info';
+export type ToastType = "success" | "error" | "info";
 
 interface ToastItem {
   id: string;
@@ -22,9 +28,13 @@ interface ToastContextValue {
   show(message: string, type?: ToastType, duration?: number): void;
 }
 
-const ToastContext = createContext<ToastContextValue>({ show: () => undefined });
+const ToastContext = createContext<ToastContextValue>({
+  show: () => undefined,
+});
 
-export const toastEmitter = new EventEmitter<{ show: [{ message: string; type: ToastType }] }>();
+export const toastEmitter = new EventEmitter<{
+  show: [{ message: string; type: ToastType }];
+}>();
 
 let _counter = 0;
 
@@ -45,9 +55,13 @@ function ToastEntry({
 
   const dismiss = useCallback(() => {
     opacity.value = withTiming(0, { duration: 200 });
-    translateY.value = withSpring(80, { damping: 14, stiffness: 200 }, (finished) => {
-      if (finished) runOnJS(onDismiss)(item.id);
-    });
+    translateY.value = withSpring(
+      80,
+      { damping: 14, stiffness: 200 },
+      (finished) => {
+        if (finished) runOnJS(onDismiss)(item.id);
+      },
+    );
   }, [item.id, onDismiss]);
 
   const style = useAnimatedStyle(() => ({
@@ -56,15 +70,17 @@ function ToastEntry({
   }));
 
   const bgColor =
-    item.type === 'success'
+    item.type === "success"
       ? colors.success
-      : item.type === 'error'
-      ? colors.danger
-      : colors.info;
+      : item.type === "error"
+        ? colors.danger
+        : colors.info;
 
   return (
     <Animated.View style={[styles.toast, { backgroundColor: bgColor }, style]}>
-      <Text style={styles.toastText} numberOfLines={2}>{item.message}</Text>
+      <Text style={styles.toastText} numberOfLines={2}>
+        {item.message}
+      </Text>
     </Animated.View>
   );
 }
@@ -73,15 +89,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
-  const show = useCallback((message: string, type: ToastType = 'info', duration = 3000) => {
-    const id = String(++_counter);
-    setToasts((prev) => {
-      const next = [...prev, { id, message, type }];
-      return next.length > 3 ? next.slice(next.length - 3) : next;
-    });
-    const timer = setTimeout(() => dismiss(id), duration);
-    timers.current.set(id, timer);
-  }, []);
+  const show = useCallback(
+    (message: string, type: ToastType = "info", duration = 3000) => {
+      const id = String(++_counter);
+      setToasts((prev) => {
+        const next = [...prev, { id, message, type }];
+        return next.length > 3 ? next.slice(next.length - 3) : next;
+      });
+      const timer = setTimeout(() => dismiss(id), duration);
+      timers.current.set(id, timer);
+    },
+    [],
+  );
 
   const dismiss = useCallback((id: string) => {
     clearTimeout(timers.current.get(id));
@@ -91,11 +110,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   // Listen for programmatic toasts from services
   React.useEffect(() => {
-    const handler = ({ message, type }: { message: string; type: ToastType }) => {
+    const handler = ({
+      message,
+      type,
+    }: {
+      message: string;
+      type: ToastType;
+    }) => {
       show(message, type);
     };
-    toastEmitter.on('show', handler);
-    return () => { toastEmitter.off('show', handler); };
+    toastEmitter.on("show", handler);
+    return () => {
+      toastEmitter.off("show", handler);
+    };
   }, [show]);
 
   return (
@@ -116,8 +143,8 @@ export function useToast(): ToastContextValue {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 100 : 80,
+    position: "absolute",
+    bottom: Platform.OS === "ios" ? 100 : 80,
     left: spacing[4],
     right: spacing[4],
     gap: spacing[2],
@@ -127,15 +154,15 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   toastText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

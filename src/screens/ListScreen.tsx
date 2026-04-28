@@ -1,36 +1,46 @@
-import React, { useRef, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useCallback, useMemo } from "react";
 import {
-  View, Text, SectionList, StyleSheet, Pressable, TextInput, Keyboard, LayoutAnimation, Platform, TouchableOpacity,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import Animated, { useSharedValue } from 'react-native-reanimated';
-import { Feather } from '@expo/vector-icons';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useTaskStore } from '../store/useTaskStore';
-import { useLabelStore } from '../store/useLabelStore';
-import { useSync } from '../hooks/useSync';
-import { colors, spacing, radius, fontSize } from '../theme';
-import { TaskRow } from '../components/task/TaskRow';
-import { EmptyState } from '../components/ui/EmptyState';
-import { Badge } from '../components/ui/Badge';
-import { TaskDetailSheet } from '../components/sheets/TaskDetailSheet';
-import { AddTaskSheet } from '../components/sheets/AddTaskSheet';
-import { groupTasksBySection } from '../utils/date';
-import type { Task } from '../types';
-import type { ListStackParamList } from '../navigation/types';
+  View,
+  Text,
+  SectionList,
+  StyleSheet,
+  Pressable,
+  TextInput,
+  Keyboard,
+  LayoutAnimation,
+  Platform,
+  TouchableOpacity,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import Animated, { useSharedValue } from "react-native-reanimated";
+import { Feather } from "@expo/vector-icons";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTaskStore } from "../store/useTaskStore";
+import { useLabelStore } from "../store/useLabelStore";
+import { useSync } from "../hooks/useSync";
+import { colors, spacing, radius, fontSize } from "../theme";
+import { TaskRow } from "../components/task/TaskRow";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Badge } from "../components/ui/Badge";
+import { TaskDetailSheet } from "../components/sheets/TaskDetailSheet";
+import { AddTaskSheet } from "../components/sheets/AddTaskSheet";
+import { groupTasksBySection } from "../utils/date";
+import type { Task } from "../types";
+import type { ListStackParamList } from "../navigation/types";
 
 export function ListScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
-  const navigation = useNavigation<NativeStackNavigationProp<ListStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<ListStackParamList>>();
   const { tasks, openTask } = useTaskStore();
   const { labels } = useLabelStore();
   const { progressStyle } = useSync();
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
@@ -39,7 +49,7 @@ export function ListScreen() {
     useCallback(() => {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setSearchOpen(false);
-      setSearch('');
+      setSearch("");
       setSearchFocused(false);
       Keyboard.dismiss();
       searchInputRef.current?.blur();
@@ -55,13 +65,13 @@ export function ListScreen() {
   function closeSearch() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSearchOpen(false);
-    setSearch('');
+    setSearch("");
     setSearchFocused(false);
     Keyboard.dismiss();
   }
 
   const detailSheetRef = useRef<BottomSheetModal>(null);
-  const addSheetRef    = useRef<BottomSheetModal>(null);
+  const addSheetRef = useRef<BottomSheetModal>(null);
 
   // Only show non-note tasks
   const nonNoteTasks = useMemo(() => tasks.filter((t) => !t.is_note), [tasks]);
@@ -72,20 +82,20 @@ export function ListScreen() {
     return nonNoteTasks.filter(
       (t) =>
         t.title.toLowerCase().includes(q) ||
-        (t.course?.toLowerCase().includes(q) ?? false)
+        (t.course?.toLowerCase().includes(q) ?? false),
     );
   }, [nonNoteTasks, search]);
 
   const sections = useMemo(() => {
-    const pinned   = filteredTasks.filter((t) => t.is_pinned);
+    const pinned = filteredTasks.filter((t) => t.is_pinned);
     const unpinned = filteredTasks.filter((t) => !t.is_pinned);
-    const groups   = groupTasksBySection(unpinned);
-    const keys     = Object.keys(groups) as Array<keyof typeof groups>;
+    const groups = groupTasksBySection(unpinned);
+    const keys = Object.keys(groups) as Array<keyof typeof groups>;
     const dateSections = keys
       .map((k) => ({ title: k, data: groups[k] }))
       .filter((s) => s.data.length > 0);
     return pinned.length > 0
-      ? [{ title: 'pinned', data: pinned }, ...dateSections]
+      ? [{ title: "pinned", data: pinned }, ...dateSections]
       : dateSections;
   }, [filteredTasks]);
 
@@ -101,26 +111,31 @@ export function ListScreen() {
   }
 
   const sectionTitles: Record<string, string> = {
-    pinned:    'Pinned',
-    overdue:   'Overdue',
-    today:     'Today',
-    tomorrow:  'Tomorrow',
-    this_week: 'This Week',
-    later:     'Later',
-    no_date:   'No Date',
+    pinned: "Pinned",
+    overdue: "Overdue",
+    today: "Today",
+    tomorrow: "Tomorrow",
+    this_week: "This Week",
+    later: "Later",
+    no_date: "No Date",
   };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Sync progress bar */}
-      <Animated.View style={[styles.progressBar, progressStyle]} pointerEvents="none" />
+      <Animated.View
+        style={[styles.progressBar, progressStyle]}
+        pointerEvents="none"
+      />
 
       {/* Header / collapsible search */}
       <View style={styles.header}>
         {!searchOpen ? (
           <>
             <Text style={styles.heading}>Tasks</Text>
-            <Badge count={nonNoteTasks.filter((t) => t.status !== 'done').length} />
+            <Badge
+              count={nonNoteTasks.filter((t) => t.status !== "done").length}
+            />
             <View style={{ flex: 1 }} />
             <Pressable onPress={openSearch} hitSlop={8}>
               <Feather name="search" size={22} color={colors.text.secondary} />
@@ -128,8 +143,20 @@ export function ListScreen() {
           </>
         ) : (
           <>
-            <View style={[styles.searchWrap, searchFocused && styles.searchWrapFocused]}>
-              <Feather name="search" size={16} color={searchFocused ? colors.accent.default : colors.text.tertiary} style={styles.searchIcon} />
+            <View
+              style={[
+                styles.searchWrap,
+                searchFocused && styles.searchWrapFocused,
+              ]}
+            >
+              <Feather
+                name="search"
+                size={16}
+                color={
+                  searchFocused ? colors.accent.default : colors.text.tertiary
+                }
+                style={styles.searchIcon}
+              />
               <TextInput
                 ref={searchInputRef}
                 value={search}
@@ -144,7 +171,11 @@ export function ListScreen() {
                 onBlur={() => setSearchFocused(false)}
               />
             </View>
-            <Pressable onPress={closeSearch} hitSlop={8} style={styles.cancelBtn}>
+            <Pressable
+              onPress={closeSearch}
+              hitSlop={8}
+              style={styles.cancelBtn}
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
           </>
@@ -165,7 +196,9 @@ export function ListScreen() {
             title="All done!"
             subtitle="No pending tasks. Enjoy!"
             actionLabel="Add a task"
-            onAction={() => { addSheetRef.current?.present(); }}
+            onAction={() => {
+              addSheetRef.current?.present();
+            }}
           />
         )
       ) : (
@@ -190,8 +223,11 @@ export function ListScreen() {
               onPostpone={() => handlePostpone(item.id)}
             />
           )}
-        stickySectionHeadersEnabled={Platform.OS === 'ios'}
-          contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + spacing[8] }]}
+          stickySectionHeadersEnabled={Platform.OS === "ios"}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: tabBarHeight + spacing[8] },
+          ]}
         />
       )}
 
@@ -209,7 +245,8 @@ export function ListScreen() {
         sheetRef={detailSheetRef}
         onOpenNoteEditor={() => {
           detailSheetRef.current?.dismiss();
-          if (openTask) navigation.navigate('NoteEditor', { taskId: openTask.id });
+          if (openTask)
+            navigation.navigate("NoteEditor", { taskId: openTask.id });
         }}
       />
       <AddTaskSheet sheetRef={addSheetRef} />
@@ -223,7 +260,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.base,
   },
   progressBar: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -232,22 +269,22 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[2],
     gap: spacing[2],
   },
   heading: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: "800",
     color: colors.text.primary,
     letterSpacing: -0.5,
   },
   searchWrap: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.bg.input,
     borderRadius: radius.md,
     paddingHorizontal: spacing[3],
@@ -277,8 +314,8 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: spacing[4],
     paddingTop: spacing[4],
     paddingBottom: spacing[2],
@@ -287,9 +324,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: fontSize.sm,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text.tertiary,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.8,
   },
   sectionCount: {
@@ -304,14 +341,14 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: spacing[5],
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.accent.default,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: colors.accent.glow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.8,

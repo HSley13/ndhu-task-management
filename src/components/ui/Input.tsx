@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState } from "react";
 import {
   TextInput,
   View,
@@ -7,13 +7,13 @@ import {
   type TextInputProps,
   type StyleProp,
   type ViewStyle,
-} from 'react-native';
+} from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-} from 'react-native-reanimated';
-import { colors, spacing, radius, fontSize } from '../../theme';
+} from "react-native-reanimated";
+import { colors, spacing, radius, fontSize } from "../../theme";
 
 interface InputProps extends TextInputProps {
   icon?: React.ReactNode;
@@ -21,12 +21,21 @@ interface InputProps extends TextInputProps {
   containerStyle?: StyleProp<ViewStyle>;
 }
 
-export function Input({ icon, rightAction, containerStyle, style, ...rest }: InputProps) {
+export function Input({
+  icon,
+  rightAction,
+  containerStyle,
+  style,
+  ...rest
+}: InputProps) {
   const [focused, setFocused] = useState(false);
   const borderColor = useSharedValue(colors.border.subtle);
 
   const animatedBorder = useAnimatedStyle(() => ({
-    borderColor: withTiming(focused ? colors.accent.default : colors.border.subtle, { duration: 180 }),
+    borderColor: withTiming(
+      focused ? colors.accent.default : colors.border.subtle,
+      { duration: 180 },
+    ),
   }));
 
   return (
@@ -48,8 +57,8 @@ export function Input({ icon, rightAction, containerStyle, style, ...rest }: Inp
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.bg.input,
     borderRadius: radius.md,
     borderWidth: 1,

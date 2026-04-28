@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { colors, radius } from '../../theme';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { colors, radius } from "../../theme";
 
 export function SheetHandle() {
   return (
@@ -12,7 +12,7 @@ export function SheetHandle() {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 10,
     paddingBottom: 6,
   },

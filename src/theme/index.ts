@@ -1,21 +1,29 @@
-import { useCallback } from 'react';
-import { colors, type Colors } from './colors';
-import { fontSize, fontWeight, letterSpacing, lineHeight } from './typography';
-import { spacing, radius } from './spacing';
+import { useCallback } from "react";
+import { colors, type Colors } from "./colors";
+import { fontSize, fontWeight, letterSpacing, lineHeight } from "./typography";
+import { spacing, radius } from "./spacing";
 
-export { colors, fontSize, fontWeight, letterSpacing, lineHeight, spacing, radius };
+export {
+  colors,
+  fontSize,
+  fontWeight,
+  letterSpacing,
+  lineHeight,
+  spacing,
+  radius,
+};
 export type { Colors };
 
 export const shadows = {
   sm: {
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.18,
     shadowRadius: 3,
     elevation: 3,
   },
   md: {
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,

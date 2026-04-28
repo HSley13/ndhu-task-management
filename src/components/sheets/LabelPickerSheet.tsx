@@ -1,12 +1,12 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Pressable, TextInput, StyleSheet } from 'react-native';
-import BottomSheet, { BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { Feather } from '@expo/vector-icons';
-import { useTaskStore } from '../../store/useTaskStore';
-import { useLabelStore } from '../../store/useLabelStore';
-import { colors, spacing, radius, fontSize } from '../../theme';
-import { SheetHandle } from '../ui/SheetHandle';
-import { Button } from '../ui/Button';
+import React, { useCallback, useMemo, useState } from "react";
+import { View, Text, Pressable, TextInput, StyleSheet } from "react-native";
+import BottomSheet, { BottomSheetBackdrop } from "@gorhom/bottom-sheet";
+import { Feather } from "@expo/vector-icons";
+import { useTaskStore } from "../../store/useTaskStore";
+import { useLabelStore } from "../../store/useLabelStore";
+import { colors, spacing, radius, fontSize } from "../../theme";
+import { SheetHandle } from "../ui/SheetHandle";
+import { Button } from "../ui/Button";
 
 interface LabelPickerSheetProps {
   sheetRef: React.RefObject<BottomSheet | null>;
@@ -15,25 +15,36 @@ interface LabelPickerSheetProps {
   onClose: () => void;
 }
 
-export function LabelPickerSheet({ sheetRef, taskId, selectedLabelIds, onClose }: LabelPickerSheetProps) {
+export function LabelPickerSheet({
+  sheetRef,
+  taskId,
+  selectedLabelIds,
+  onClose,
+}: LabelPickerSheetProps) {
   const { setTaskLabels } = useTaskStore();
   const { labels, addLabel } = useLabelStore();
-  const snapPoints = useMemo(() => ['55%'], []);
+  const snapPoints = useMemo(() => ["55%"], []);
 
   const [selected, setSelected] = useState<string[]>(selectedLabelIds);
-  const [newName, setNewName] = useState('');
+  const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState(colors.labels[0] as string);
   const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const renderBackdrop = useCallback(
-    (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+      />
+    ),
     [],
   );
 
   function toggle(id: string) {
     setSelected((prev) =>
-      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id],
     );
   }
 
@@ -53,7 +64,7 @@ export function LabelPickerSheet({ sheetRef, taskId, selectedLabelIds, onClose }
     const n = newName.trim();
     if (!n) return;
     await addLabel(n, newColor);
-    setNewName('');
+    setNewName("");
     setShowNew(false);
   }
 
@@ -71,7 +82,11 @@ export function LabelPickerSheet({ sheetRef, taskId, selectedLabelIds, onClose }
       <View style={styles.content}>
         <Text style={styles.heading}>Labels</Text>
         {labels.map((label) => (
-          <Pressable key={label.id} style={styles.row} onPress={() => toggle(label.id)}>
+          <Pressable
+            key={label.id}
+            style={styles.row}
+            onPress={() => toggle(label.id)}
+          >
             <View style={[styles.dot, { backgroundColor: label.color }]} />
             <Text style={styles.labelName}>{label.name}</Text>
             {selected.includes(label.id) && (
@@ -95,13 +110,27 @@ export function LabelPickerSheet({ sheetRef, taskId, selectedLabelIds, onClose }
                 <Pressable
                   key={c}
                   onPress={() => setNewColor(c)}
-                  style={[styles.colorDot, { backgroundColor: c }, newColor === c && styles.colorDotActive]}
+                  style={[
+                    styles.colorDot,
+                    { backgroundColor: c },
+                    newColor === c && styles.colorDotActive,
+                  ]}
                 />
               ))}
             </View>
             <View style={styles.newBtns}>
-              <Button variant="ghost" label="Cancel" onPress={() => setShowNew(false)} style={{ flex: 1 }} />
-              <Button label="Create" onPress={handleCreateLabel} disabled={!newName.trim()} style={{ flex: 1 }} />
+              <Button
+                variant="ghost"
+                label="Cancel"
+                onPress={() => setShowNew(false)}
+                style={{ flex: 1 }}
+              />
+              <Button
+                label="Create"
+                onPress={handleCreateLabel}
+                disabled={!newName.trim()}
+                style={{ flex: 1 }}
+              />
             </View>
           </View>
         ) : (
@@ -111,7 +140,12 @@ export function LabelPickerSheet({ sheetRef, taskId, selectedLabelIds, onClose }
           </Pressable>
         )}
 
-        <Button label="Apply" onPress={handleSave} loading={loading} style={styles.applyBtn} />
+        <Button
+          label="Apply"
+          onPress={handleSave}
+          loading={loading}
+          style={styles.applyBtn}
+        />
       </View>
     </BottomSheet>
   );
@@ -130,13 +164,13 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text.primary,
     paddingBottom: spacing[2],
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing[3],
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
@@ -153,8 +187,8 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing[2],
     paddingVertical: spacing[3],
   },
@@ -177,8 +211,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[3],
   },
   colorRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing[2],
   },
   colorDot: {
@@ -188,10 +222,10 @@ const styles = StyleSheet.create({
   },
   colorDotActive: {
     borderWidth: 3,
-    borderColor: '#fff',
+    borderColor: "#fff",
   },
   newBtns: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing[2],
   },
   applyBtn: {

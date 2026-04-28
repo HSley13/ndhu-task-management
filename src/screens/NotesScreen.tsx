@@ -1,25 +1,32 @@
-import React, { useRef, useState, useMemo, useCallback } from 'react';
+import React, { useRef, useState, useMemo, useCallback } from "react";
 import {
-  View, Text, FlatList, StyleSheet, Pressable, TextInput, Keyboard, LayoutAnimation,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { Feather } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { colors, spacing, radius, fontSize } from '../theme';
-import { EmptyState } from '../components/ui/EmptyState';
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Pressable,
+  TextInput,
+  Keyboard,
+  LayoutAnimation,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { Feather } from "@expo/vector-icons";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { colors, spacing, radius, fontSize } from "../theme";
+import { EmptyState } from "../components/ui/EmptyState";
 
 // Notes are tasks with is_note === true
-import { useTaskStore } from '../store/useTaskStore';
-import type { Task } from '../types/index';
-import { formatDueDate } from '../utils/date';
+import { useTaskStore } from "../store/useTaskStore";
+import type { Task } from "../types/index";
+import { formatDueDate } from "../utils/date";
 
 export function NotesScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<any>();
   const { tasks, openTaskDetail, togglePin } = useTaskStore();
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<TextInput>(null);
@@ -28,7 +35,7 @@ export function NotesScreen() {
     useCallback(() => {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setSearchOpen(false);
-      setSearch('');
+      setSearch("");
       setSearchFocused(false);
       Keyboard.dismiss();
       searchInputRef.current?.blur();
@@ -44,38 +51,42 @@ export function NotesScreen() {
   function closeSearch() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSearchOpen(false);
-    setSearch('');
+    setSearch("");
     setSearchFocused(false);
     Keyboard.dismiss();
   }
 
-  const notes = useMemo(() =>
-    tasks
-      .filter((t) => t.is_note)
-      .filter((t) => {
-        if (!search.trim()) return true;
-        const q = search.toLowerCase();
-        return t.title.toLowerCase().includes(q) || (t.note_content ?? '').toLowerCase().includes(q);
-      })
-      .sort((a, b) => {
-        if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
-        const da = new Date(a.updated_at).getTime();
-        const db = new Date(b.updated_at).getTime();
-        return db - da;
-      }),
-    [tasks, search]
+  const notes = useMemo(
+    () =>
+      tasks
+        .filter((t) => t.is_note)
+        .filter((t) => {
+          if (!search.trim()) return true;
+          const q = search.toLowerCase();
+          return (
+            t.title.toLowerCase().includes(q) ||
+            (t.note_content ?? "").toLowerCase().includes(q)
+          );
+        })
+        .sort((a, b) => {
+          if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+          const da = new Date(a.updated_at).getTime();
+          const db = new Date(b.updated_at).getTime();
+          return db - da;
+        }),
+    [tasks, search],
   );
 
   async function handleNotePress(item: Task) {
     await openTaskDetail(item.id);
-    navigation.navigate('NoteEditor', { taskId: item.id });
+    navigation.navigate("NoteEditor", { taskId: item.id });
   }
 
   function renderNote({ item }: { item: Task }) {
-    const preview = (item.note_content ?? '')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/\s+/g, ' ')
+    const preview = (item.note_content ?? "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
       .trim();
     return (
       <Pressable
@@ -88,11 +99,17 @@ export function NotesScreen() {
             <Feather name="bookmark" size={11} color={colors.accent.default} />
           </View>
         )}
-        <Text style={styles.noteTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={styles.noteTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
         {preview.length > 0 && (
-          <Text style={styles.notePreview} numberOfLines={3}>{preview}</Text>
+          <Text style={styles.notePreview} numberOfLines={3}>
+            {preview}
+          </Text>
         )}
-        <Text style={styles.noteDate}>{formatDueDate(item.updated_at.split('T')[0])}</Text>
+        <Text style={styles.noteDate}>
+          {formatDueDate(item.updated_at.split("T")[0])}
+        </Text>
       </Pressable>
     );
   }
@@ -110,8 +127,20 @@ export function NotesScreen() {
           </>
         ) : (
           <>
-            <View style={[styles.searchWrap, searchFocused && styles.searchWrapFocused]}>
-              <Feather name="search" size={16} color={searchFocused ? colors.accent.default : colors.text.tertiary} style={styles.searchIcon} />
+            <View
+              style={[
+                styles.searchWrap,
+                searchFocused && styles.searchWrapFocused,
+              ]}
+            >
+              <Feather
+                name="search"
+                size={16}
+                color={
+                  searchFocused ? colors.accent.default : colors.text.tertiary
+                }
+                style={styles.searchIcon}
+              />
               <TextInput
                 value={search}
                 onChangeText={setSearch}
@@ -124,7 +153,11 @@ export function NotesScreen() {
                 onBlur={() => setSearchFocused(false)}
               />
             </View>
-            <Pressable onPress={closeSearch} hitSlop={8} style={styles.cancelBtn}>
+            <Pressable
+              onPress={closeSearch}
+              hitSlop={8}
+              style={styles.cancelBtn}
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
           </>
@@ -137,7 +170,7 @@ export function NotesScreen() {
           title="No notes yet"
           subtitle="Tap + to write a note."
           actionLabel="New note"
-          onAction={() => navigation.navigate('NoteEditor' as any)}
+          onAction={() => navigation.navigate("NoteEditor" as any)}
         />
       ) : (
         <FlatList
@@ -148,14 +181,17 @@ export function NotesScreen() {
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           columnWrapperStyle={styles.row}
-          contentContainerStyle={[styles.list, { paddingBottom: tabBarHeight + spacing[8] }]}
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: tabBarHeight + spacing[8] },
+          ]}
         />
       )}
 
       {/* FAB */}
       <Pressable
         style={[styles.fab, { bottom: tabBarHeight + spacing[4] }]}
-        onPress={() => navigation.navigate('NoteEditor' as any)}
+        onPress={() => navigation.navigate("NoteEditor" as any)}
       >
         <Feather name="plus" size={28} color="#fff" />
       </Pressable>
@@ -169,22 +205,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.base,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[2],
     gap: spacing[2],
   },
   heading: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: "800",
     color: colors.text.primary,
     letterSpacing: -0.5,
   },
   searchWrap: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.bg.input,
     borderRadius: radius.md,
     paddingHorizontal: spacing[3],
@@ -218,7 +254,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   row: {
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
     paddingHorizontal: spacing[2],
     gap: spacing[3],
   },
@@ -236,13 +272,13 @@ const styles = StyleSheet.create({
     borderColor: colors.accent.default,
   },
   pinBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: spacing[2],
     right: spacing[2],
   },
   noteTitle: {
     fontSize: fontSize.sm,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text.primary,
   },
   notePreview: {
@@ -256,15 +292,15 @@ const styles = StyleSheet.create({
     marginTop: spacing[1],
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: spacing[5],
     width: 56,
     height: 56,
     borderRadius: 28,
     backgroundColor: colors.accent.default,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,

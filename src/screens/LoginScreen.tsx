@@ -1,73 +1,90 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View, Text, TextInput, StyleSheet, Pressable, Keyboard,
-  KeyboardAvoidingView, Image, Platform,
-} from 'react-native';
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Pressable,
+  Keyboard,
+  KeyboardAvoidingView,
+  Image,
+  Platform,
+} from "react-native";
 import Animated, {
-  useSharedValue, useAnimatedStyle, withSpring, withTiming, withSequence,
-} from 'react-native-reanimated';
-import { Feather } from '@expo/vector-icons';
-import { useAuthStore } from '../store/useAuthStore';
-import { colors, spacing, radius, fontSize, shadows } from '../theme';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { useToast } from '../hooks/useToast';
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  withSequence,
+} from "react-native-reanimated";
+import { Feather } from "@expo/vector-icons";
+import { useAuthStore } from "../store/useAuthStore";
+import { colors, spacing, radius, fontSize, shadows } from "../theme";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { useToast } from "../hooks/useToast";
 
 export function LoginScreen() {
   const { login, is_loading: isLoading, error } = useAuthStore();
   const { show } = useToast();
 
-  const [studentId, setStudentId] = useState('');
-  const [password, setPassword] = useState('');
+  const [studentId, setStudentId] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  const logoScale  = useSharedValue(0.7);
+  const logoScale = useSharedValue(0.7);
   const logoOpacity = useSharedValue(0);
   const formOpacity = useSharedValue(0);
   const shakeX = useSharedValue(0);
 
   useEffect(() => {
-    logoScale.value  = withSpring(1, { damping: 12, stiffness: 100 });
+    logoScale.value = withSpring(1, { damping: 12, stiffness: 100 });
     logoOpacity.value = withTiming(1, { duration: 500 });
     formOpacity.value = withTiming(1, { duration: 600 });
   }, []);
 
   useEffect(() => {
     if (error) {
-      show(error, 'error');
+      show(error, "error");
       shakeX.value = withSequence(
         withTiming(-10, { duration: 60 }),
-        withTiming(10,  { duration: 60 }),
-        withTiming(-8,  { duration: 50 }),
-        withTiming(8,   { duration: 50 }),
-        withTiming(0,   { duration: 40 }),
+        withTiming(10, { duration: 60 }),
+        withTiming(-8, { duration: 50 }),
+        withTiming(8, { duration: 50 }),
+        withTiming(0, { duration: 40 }),
       );
     }
   }, [error]);
 
-  const logoStyle  = useAnimatedStyle(() => ({ transform: [{ scale: logoScale.value }], opacity: logoOpacity.value }));
-  const formStyle  = useAnimatedStyle(() => ({ opacity: formOpacity.value }));
-  const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shakeX.value }] }));
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: logoScale.value }],
+    opacity: logoOpacity.value,
+  }));
+  const formStyle = useAnimatedStyle(() => ({ opacity: formOpacity.value }));
+  const shakeStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shakeX.value }],
+  }));
 
   async function handleLogin() {
     Keyboard.dismiss();
     if (!studentId.trim() || !password.trim()) {
-      show('Please enter your student ID and password', 'error');
+      show("Please enter your student ID and password", "error");
       return;
     }
     await login(studentId.trim(), password.trim());
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior="padding"
-    >
+    <KeyboardAvoidingView style={styles.container} behavior="padding">
       <View style={styles.inner}>
         {/* Logo area */}
         <Animated.View style={[styles.logoArea, logoStyle]}>
           <View style={styles.logoCircle}>
-            <Feather name="check-square" size={40} color={colors.accent.default} />
+            <Feather
+              name="check-square"
+              size={40}
+              color={colors.accent.default}
+            />
           </View>
           <Text style={styles.appName}>NDHU Assistant</Text>
           <Text style={styles.tagline}>Your academic tasks, organized</Text>
@@ -83,7 +100,9 @@ export function LoginScreen() {
             returnKeyType="next"
             autoCapitalize="none"
             autoCorrect={false}
-            icon={<Feather name="user" size={18} color={colors.text.tertiary} />}
+            icon={
+              <Feather name="user" size={18} color={colors.text.tertiary} />
+            }
           />
           <Input
             value={password}
@@ -95,11 +114,13 @@ export function LoginScreen() {
             autoCorrect={false}
             autoComplete="off"
             onSubmitEditing={handleLogin}
-            icon={<Feather name="lock" size={18} color={colors.text.tertiary} />}
+            icon={
+              <Feather name="lock" size={18} color={colors.text.tertiary} />
+            }
             rightAction={
               <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={8}>
                 <Feather
-                  name={showPassword ? 'eye-off' : 'eye'}
+                  name={showPassword ? "eye-off" : "eye"}
                   size={18}
                   color={colors.text.tertiary}
                 />
@@ -129,12 +150,12 @@ const styles = StyleSheet.create({
   },
   inner: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingHorizontal: spacing[6],
     gap: spacing[8],
   },
   logoArea: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: spacing[3],
   },
   logoCircle: {
@@ -142,15 +163,15 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 24,
     backgroundColor: colors.accent.soft,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.accent.muted,
     ...shadows.glow,
   },
   appName: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: "800",
     color: colors.text.primary,
     letterSpacing: -0.5,
   },
@@ -160,10 +181,12 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing[4],
-    ...Platform.select({ web: { maxWidth: 480, alignSelf: 'center' as const, width: '100%' } }),
+    ...Platform.select({
+      web: { maxWidth: 480, alignSelf: "center" as const, width: "100%" },
+    }),
   },
   footer: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: fontSize.xs,
     color: colors.text.tertiary,
     lineHeight: fontSize.xs * 1.6,

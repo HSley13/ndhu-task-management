@@ -1,18 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  Modal, View, Text, Pressable, StyleSheet, Platform,
-  KeyboardAvoidingView, ScrollView,
-} from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { format, parseISO } from 'date-fns';
-import { useTaskStore } from '../../store/useTaskStore';
-import { colors, spacing, radius, fontSize } from '../../theme';
-import { DEFAULT_POSTPONE_OPTIONS, computePostponeDate, formatPostponeTarget } from '../../utils/postpone';
-import type { PostponeOption } from '../../types';
+  Modal,
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { format, parseISO } from "date-fns";
+import { useTaskStore } from "../../store/useTaskStore";
+import { colors, spacing, radius, fontSize } from "../../theme";
+import {
+  DEFAULT_POSTPONE_OPTIONS,
+  computePostponeDate,
+  formatPostponeTarget,
+} from "../../utils/postpone";
+import type { PostponeOption } from "../../types";
 
 const NativeDatePicker: React.ComponentType<any> =
-  Platform.OS !== 'web'
-    ? require('@react-native-community/datetimepicker').default
+  Platform.OS !== "web"
+    ? require("@react-native-community/datetimepicker").default
     : View;
 
 export interface PostponeModalProps {
@@ -21,14 +31,22 @@ export interface PostponeModalProps {
   taskId: string | null;
 }
 
-export function PostponeSheet({ visible, onClose, taskId }: PostponeModalProps) {
+export function PostponeSheet({
+  visible,
+  onClose,
+  taskId,
+}: PostponeModalProps) {
   const { postponeTask } = useTaskStore();
   const [showCustomPicker, setShowCustomPicker] = useState(false);
   const [customDate, setCustomDate] = useState<Date | null>(null);
 
   async function commit(date: Date) {
     if (!taskId) return;
-    await postponeTask(taskId, format(date, 'yyyy-MM-dd'), format(date, 'HH:mm:ss'));
+    await postponeTask(
+      taskId,
+      format(date, "yyyy-MM-dd"),
+      format(date, "HH:mm:ss"),
+    );
     handleClose();
   }
 
@@ -40,7 +58,7 @@ export function PostponeSheet({ visible, onClose, taskId }: PostponeModalProps) 
 
   async function handleSelect(option: PostponeOption) {
     if (!taskId) return;
-    if (option.type === 'custom') {
+    if (option.type === "custom") {
       setShowCustomPicker(true);
       return;
     }
@@ -52,8 +70,12 @@ export function PostponeSheet({ visible, onClose, taskId }: PostponeModalProps) 
     else handleClose();
   }
 
-  const previewableOptions = DEFAULT_POSTPONE_OPTIONS.filter((o) => o.type !== 'custom');
-  const customOption = DEFAULT_POSTPONE_OPTIONS.find((o) => o.type === 'custom')!;
+  const previewableOptions = DEFAULT_POSTPONE_OPTIONS.filter(
+    (o) => o.type !== "custom",
+  );
+  const customOption = DEFAULT_POSTPONE_OPTIONS.find(
+    (o) => o.type === "custom",
+  )!;
 
   return (
     <Modal
@@ -65,7 +87,7 @@ export function PostponeSheet({ visible, onClose, taskId }: PostponeModalProps) 
     >
       <Pressable style={styles.overlay} onPress={handleClose}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.kav}
         >
           <Pressable style={styles.card} onPress={(e) => e.stopPropagation?.()}>
@@ -73,7 +95,11 @@ export function PostponeSheet({ visible, onClose, taskId }: PostponeModalProps) 
             <View style={styles.cardHeader}>
               <Feather name="clock" size={16} color={colors.accent.default} />
               <Text style={styles.cardTitle}>Postpone to…</Text>
-              <Pressable onPress={handleClose} hitSlop={12} style={styles.closeBtn}>
+              <Pressable
+                onPress={handleClose}
+                hitSlop={12}
+                style={styles.closeBtn}
+              >
                 <Feather name="x" size={18} color={colors.text.tertiary} />
               </Pressable>
             </View>
@@ -84,53 +110,83 @@ export function PostponeSheet({ visible, onClose, taskId }: PostponeModalProps) 
               keyboardShouldPersistTaps="handled"
             >
               {/* Preset options */}
-              {!showCustomPicker && previewableOptions.map((option) => {
-                const result = computePostponeDate(option);
-                return (
-                  <Pressable
-                    key={option.label}
-                    style={styles.row}
-                    onPress={() => handleSelect(option)}
-                  >
-                    <View style={styles.iconWrap}>
-                      <Feather name="clock" size={16} color={colors.accent.default} />
-                    </View>
-                    <View style={styles.rowContent}>
-                      <Text style={styles.rowLabel}>{option.label}</Text>
-                      <Text style={styles.rowPreview}>{formatPostponeTarget(result)}</Text>
-                    </View>
-                    <Feather name="chevron-right" size={16} color={colors.border.strong} />
-                  </Pressable>
-                );
-              })}
+              {!showCustomPicker &&
+                previewableOptions.map((option) => {
+                  const result = computePostponeDate(option);
+                  return (
+                    <Pressable
+                      key={option.label}
+                      style={styles.row}
+                      onPress={() => handleSelect(option)}
+                    >
+                      <View style={styles.iconWrap}>
+                        <Feather
+                          name="clock"
+                          size={16}
+                          color={colors.accent.default}
+                        />
+                      </View>
+                      <View style={styles.rowContent}>
+                        <Text style={styles.rowLabel}>{option.label}</Text>
+                        <Text style={styles.rowPreview}>
+                          {formatPostponeTarget(result)}
+                        </Text>
+                      </View>
+                      <Feather
+                        name="chevron-right"
+                        size={16}
+                        color={colors.border.strong}
+                      />
+                    </Pressable>
+                  );
+                })}
 
               {/* Custom picker row or inline picker */}
               {!showCustomPicker ? (
-                <Pressable style={styles.row} onPress={() => handleSelect(customOption)}>
+                <Pressable
+                  style={styles.row}
+                  onPress={() => handleSelect(customOption)}
+                >
                   <View style={styles.iconWrap}>
-                    <Feather name="calendar" size={16} color={colors.accent.default} />
+                    <Feather
+                      name="calendar"
+                      size={16}
+                      color={colors.accent.default}
+                    />
                   </View>
                   <View style={styles.rowContent}>
                     <Text style={styles.rowLabel}>{customOption.label}</Text>
-                    <Text style={styles.rowPreview}>Choose a specific date &amp; time</Text>
+                    <Text style={styles.rowPreview}>
+                      Choose a specific date &amp; time
+                    </Text>
                   </View>
-                  <Feather name="chevron-right" size={16} color={colors.border.strong} />
+                  <Feather
+                    name="chevron-right"
+                    size={16}
+                    color={colors.border.strong}
+                  />
                 </Pressable>
               ) : (
                 <View style={styles.customSection}>
-                  <Text style={styles.customHeading}>Pick a date &amp; time</Text>
-                  {Platform.OS !== 'web' ? (
+                  <Text style={styles.customHeading}>
+                    Pick a date &amp; time
+                  </Text>
+                  {Platform.OS !== "web" ? (
                     <NativeDatePicker
                       value={customDate ?? new Date()}
                       mode="datetime"
                       display="spinner"
-                      onChange={(_: any, d?: Date) => { if (d) setCustomDate(d); }}
+                      onChange={(_: any, d?: Date) => {
+                        if (d) setCustomDate(d);
+                      }}
                     />
                   ) : (
                     <View style={styles.webPickerRow}>
-                      {React.createElement('input', {
-                        type: 'date',
-                        value: customDate ? format(customDate, 'yyyy-MM-dd') : '',
+                      {React.createElement("input", {
+                        type: "date",
+                        value: customDate
+                          ? format(customDate, "yyyy-MM-dd")
+                          : "",
                         onChange: (e: any) => {
                           if (e.target.value) {
                             const d = customDate ?? new Date();
@@ -139,29 +195,63 @@ export function PostponeSheet({ visible, onClose, taskId }: PostponeModalProps) 
                             setCustomDate(parsed);
                           }
                         },
-                        style: { colorScheme: 'dark', flex: 1, color: colors.text.primary, background: colors.bg.elevated, border: `1px solid ${colors.border.default}`, borderRadius: `${radius.md}px`, padding: `${spacing[2]}px ${spacing[3]}px`, fontSize: `${fontSize.sm}px`, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' },
+                        style: {
+                          colorScheme: "dark",
+                          flex: 1,
+                          color: colors.text.primary,
+                          background: colors.bg.elevated,
+                          border: `1px solid ${colors.border.default}`,
+                          borderRadius: `${radius.md}px`,
+                          padding: `${spacing[2]}px ${spacing[3]}px`,
+                          fontSize: `${fontSize.sm}px`,
+                          outline: "none",
+                          boxSizing: "border-box",
+                          fontFamily: "inherit",
+                        },
                       })}
-                      {React.createElement('input', {
-                        type: 'time',
-                        value: customDate ? format(customDate, 'HH:mm') : '',
+                      {React.createElement("input", {
+                        type: "time",
+                        value: customDate ? format(customDate, "HH:mm") : "",
                         onChange: (e: any) => {
                           if (e.target.value) {
-                            const d = customDate ? new Date(customDate) : new Date();
-                            const [h, m] = e.target.value.split(':').map(Number);
+                            const d = customDate
+                              ? new Date(customDate)
+                              : new Date();
+                            const [h, m] = e.target.value
+                              .split(":")
+                              .map(Number);
                             d.setHours(h, m, 0, 0);
                             setCustomDate(d);
                           }
                         },
-                        style: { colorScheme: 'dark', flex: 1, color: colors.text.primary, background: colors.bg.elevated, border: `1px solid ${colors.border.default}`, borderRadius: `${radius.md}px`, padding: `${spacing[2]}px ${spacing[3]}px`, fontSize: `${fontSize.sm}px`, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' },
+                        style: {
+                          colorScheme: "dark",
+                          flex: 1,
+                          color: colors.text.primary,
+                          background: colors.bg.elevated,
+                          border: `1px solid ${colors.border.default}`,
+                          borderRadius: `${radius.md}px`,
+                          padding: `${spacing[2]}px ${spacing[3]}px`,
+                          fontSize: `${fontSize.sm}px`,
+                          outline: "none",
+                          boxSizing: "border-box",
+                          fontFamily: "inherit",
+                        },
                       })}
                     </View>
                   )}
                   <View style={styles.customActions}>
-                    <Pressable style={styles.cancelBtn} onPress={() => setShowCustomPicker(false)}>
+                    <Pressable
+                      style={styles.cancelBtn}
+                      onPress={() => setShowCustomPicker(false)}
+                    >
                       <Text style={styles.cancelBtnText}>Back</Text>
                     </Pressable>
                     <Pressable
-                      style={[styles.confirmBtn, !customDate && styles.confirmBtnDisabled]}
+                      style={[
+                        styles.confirmBtn,
+                        !customDate && styles.confirmBtnDisabled,
+                      ]}
                       onPress={handleCustomConfirm}
                       disabled={!customDate}
                     >
@@ -181,24 +271,24 @@ export function PostponeSheet({ visible, onClose, taskId }: PostponeModalProps) 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: spacing[5],
   },
   kav: {
-    width: '100%',
+    width: "100%",
     maxWidth: 420,
   },
   card: {
     backgroundColor: colors.bg.surface,
     borderRadius: radius.xl,
-    overflow: 'hidden',
-    maxHeight: '85%' as any,
+    overflow: "hidden",
+    maxHeight: "85%" as any,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing[2],
     paddingHorizontal: spacing[5],
     paddingTop: spacing[4],
@@ -209,7 +299,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     flex: 1,
     fontSize: fontSize.base,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text.primary,
   },
   closeBtn: {
@@ -220,8 +310,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2],
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: spacing[4],
     gap: spacing[3],
     borderBottomWidth: 1,
@@ -232,8 +322,8 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: radius.sm,
     backgroundColor: colors.accent.soft,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   rowContent: {
     flex: 1,
@@ -241,7 +331,7 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     fontSize: fontSize.base,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
   },
   rowPreview: {
@@ -254,11 +344,11 @@ const styles = StyleSheet.create({
   },
   customHeading: {
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.secondary,
   },
   webPickerRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing[2],
   },
   webDateInput: {
@@ -273,7 +363,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
   },
   customActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing[3],
     marginTop: spacing[1],
   },
@@ -282,13 +372,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.elevated,
     borderRadius: radius.md,
     paddingVertical: spacing[3],
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
     borderColor: colors.border.default,
   },
   cancelBtnText: {
     fontSize: fontSize.base,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.secondary,
   },
   confirmBtn: {
@@ -296,14 +386,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.default,
     borderRadius: radius.md,
     paddingVertical: spacing[3],
-    alignItems: 'center',
+    alignItems: "center",
   },
   confirmBtnDisabled: {
     opacity: 0.4,
   },
   confirmBtnText: {
     fontSize: fontSize.base,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.bg.surface,
   },
 });

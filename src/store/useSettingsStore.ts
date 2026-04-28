@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import * as SecureStore from 'expo-secure-store';
+import { create } from "zustand";
+import * as SecureStore from "expo-secure-store";
 
-const SETTINGS_KEY = 'ndhu_settings';
+const SETTINGS_KEY = "ndhu_settings";
 
 interface SettingsState {
   lastSyncedAt: number | null;
@@ -36,12 +36,16 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   setDefaultReminderOffsets(offsets) {
     set({ defaultReminderOffsets: offsets });
-    persistSettings({ ...get(), defaultReminderOffsets: offsets }).catch(() => undefined);
+    persistSettings({ ...get(), defaultReminderOffsets: offsets }).catch(
+      () => undefined,
+    );
   },
 
   setAutoReminders(enabled) {
     set({ autoReminders: enabled });
-    persistSettings({ ...get(), autoReminders: enabled }).catch(() => undefined);
+    persistSettings({ ...get(), autoReminders: enabled }).catch(
+      () => undefined,
+    );
   },
 
   async _loadFromStorage() {
@@ -50,9 +54,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<SettingsState>;
         set({
-          lastSyncedAt:           parsed.lastSyncedAt           ?? DEFAULT_STATE.lastSyncedAt,
-          defaultReminderOffsets: parsed.defaultReminderOffsets ?? DEFAULT_STATE.defaultReminderOffsets,
-          autoReminders:          parsed.autoReminders          ?? DEFAULT_STATE.autoReminders,
+          lastSyncedAt: parsed.lastSyncedAt ?? DEFAULT_STATE.lastSyncedAt,
+          defaultReminderOffsets:
+            parsed.defaultReminderOffsets ??
+            DEFAULT_STATE.defaultReminderOffsets,
+          autoReminders: parsed.autoReminders ?? DEFAULT_STATE.autoReminders,
         });
       }
     } catch {

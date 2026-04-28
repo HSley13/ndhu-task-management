@@ -1,13 +1,14 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import {
-  View, Text, TextInput, Pressable, StyleSheet,
-} from 'react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import { Feather } from '@expo/vector-icons';
-import { useTaskStore } from '../../store/useTaskStore';
-import { colors, spacing, radius, fontSize } from '../../theme';
-import { Button } from '../ui/Button';
-import { SheetHandle } from '../ui/SheetHandle';
+import React, { useCallback, useMemo, useState } from "react";
+import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
+import BottomSheet, {
+  BottomSheetScrollView,
+  BottomSheetBackdrop,
+} from "@gorhom/bottom-sheet";
+import { Feather } from "@expo/vector-icons";
+import { useTaskStore } from "../../store/useTaskStore";
+import { colors, spacing, radius, fontSize } from "../../theme";
+import { Button } from "../ui/Button";
+import { SheetHandle } from "../ui/SheetHandle";
 
 interface AddNoteSheetProps {
   sheetRef: React.RefObject<BottomSheet | null>;
@@ -17,14 +18,20 @@ interface AddNoteSheetProps {
 
 export function AddNoteSheet({ sheetRef, onNoteCreated }: AddNoteSheetProps) {
   const { addTask } = useTaskStore();
-  const snapPoints = useMemo(() => ['55%', '85%'], []);
+  const snapPoints = useMemo(() => ["55%", "85%"], []);
 
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
 
   const renderBackdrop = useCallback(
-    (props: any) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />,
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+      />
+    ),
     [],
   );
 
@@ -33,13 +40,16 @@ export function AddNoteSheet({ sheetRef, onNoteCreated }: AddNoteSheetProps) {
   }, []);
 
   function reset() {
-    setTitle('');
-    setContent('');
+    setTitle("");
+    setContent("");
     setLoading(false);
   }
 
   async function handleCreate() {
-    const t = title.trim() || (content.trim().split('\n')[0].slice(0, 60) || 'Untitled note');
+    const t =
+      title.trim() ||
+      content.trim().split("\n")[0].slice(0, 60) ||
+      "Untitled note";
     setLoading(true);
     try {
       const task = await addTask({
@@ -47,8 +57,8 @@ export function AddNoteSheet({ sheetRef, onNoteCreated }: AddNoteSheetProps) {
         course: null,
         due_date: null,
         due_time: null,
-        source: 'manual',
-        status: 'pending',
+        source: "manual",
+        status: "pending",
         is_pinned: false,
         is_note: true,
         note_content: content.trim() || null,
@@ -129,14 +139,14 @@ const styles = StyleSheet.create({
     gap: spacing[4],
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing[2],
     paddingTop: spacing[2],
   },
   heading: {
     fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text.primary,
   },
   titleInput: {

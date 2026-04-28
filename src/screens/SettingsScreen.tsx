@@ -1,18 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  View, Text, ScrollView, StyleSheet, Pressable, Switch, Alert,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { Feather } from '@expo/vector-icons';
-import { useAuthStore } from '../store/useAuthStore';
-import { useSettingsStore } from '../store/useSettingsStore';
-import { colors, spacing, radius, fontSize } from '../theme';
-import { Button } from '../components/ui/Button';
-import { Divider } from '../components/ui/Divider';
-import { format } from 'date-fns';
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+  Switch,
+  Alert,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { Feather } from "@expo/vector-icons";
+import { useAuthStore } from "../store/useAuthStore";
+import { useSettingsStore } from "../store/useSettingsStore";
+import { colors, spacing, radius, fontSize } from "../theme";
+import { Button } from "../components/ui/Button";
+import { Divider } from "../components/ui/Divider";
+import { format } from "date-fns";
 
-function Row({ label, value, onPress, rightElement }: {
+function Row({
+  label,
+  value,
+  onPress,
+  rightElement,
+}: {
   label: string;
   value?: string;
   onPress?: () => void;
@@ -21,9 +32,8 @@ function Row({ label, value, onPress, rightElement }: {
   return (
     <Pressable style={styles.row} onPress={onPress} disabled={!onPress}>
       <Text style={styles.rowLabel}>{label}</Text>
-      {rightElement ?? (
-        value ? <Text style={styles.rowValue}>{value}</Text> : null
-      )}
+      {rightElement ??
+        (value ? <Text style={styles.rowValue}>{value}</Text> : null)}
       {onPress && !rightElement && (
         <Feather name="chevron-right" size={16} color={colors.border.strong} />
       )}
@@ -39,14 +49,18 @@ export function SettingsScreen() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   async function handleLogout() {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: 'Sign Out',
-        style: 'destructive',
+        text: "Sign Out",
+        style: "destructive",
         onPress: async () => {
           setLoggingOut(true);
-          try { await logout(); } finally { setLoggingOut(false); }
+          try {
+            await logout();
+          } finally {
+            setLoggingOut(false);
+          }
         },
       },
     ]);
@@ -58,15 +72,24 @@ export function SettingsScreen() {
         <Text style={styles.heading}>Settings</Text>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[4] }]}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: tabBarHeight + spacing[4] },
+        ]}
+      >
         {/* Account */}
         <Text style={styles.section}>Account</Text>
         <View style={styles.card}>
-          <Row label="Student ID" value={studentId ?? '—'} />
+          <Row label="Student ID" value={studentId ?? "—"} />
           <Divider spacing={0} />
           <Row
             label="Last Synced"
-            value={lastSyncedAt ? format(new Date(lastSyncedAt), 'MMM d, h:mm a') : 'Never'}
+            value={
+              lastSyncedAt
+                ? format(new Date(lastSyncedAt), "MMM d, h:mm a")
+                : "Never"
+            }
           />
         </View>
 
@@ -79,8 +102,13 @@ export function SettingsScreen() {
               <Switch
                 value={autoReminders}
                 onValueChange={setAutoReminders}
-                trackColor={{ false: colors.border.default, true: colors.accent.muted }}
-                thumbColor={autoReminders ? colors.accent.default : colors.text.tertiary}
+                trackColor={{
+                  false: colors.border.default,
+                  true: colors.accent.muted,
+                }}
+                thumbColor={
+                  autoReminders ? colors.accent.default : colors.text.tertiary
+                }
               />
             }
           />
@@ -116,7 +144,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: "800",
     color: colors.text.primary,
     letterSpacing: -0.5,
   },
@@ -126,9 +154,9 @@ const styles = StyleSheet.create({
   },
   section: {
     fontSize: fontSize.sm,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text.tertiary,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.8,
     marginTop: spacing[4],
     marginBottom: spacing[1],
@@ -138,11 +166,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border.subtle,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     gap: spacing[3],
@@ -155,8 +183,8 @@ const styles = StyleSheet.create({
   rowValue: {
     fontSize: fontSize.sm,
     color: colors.text.tertiary,
-    maxWidth: '50%',
-    textAlign: 'right',
+    maxWidth: "50%",
+    textAlign: "right",
   },
   signOutBtn: {
     marginTop: spacing[6],

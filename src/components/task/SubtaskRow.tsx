@@ -1,12 +1,12 @@
-import React, { useRef, useState } from 'react';
-import { TextInput, Pressable, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
-import { Checkbox } from '../ui/Checkbox';
-import { useTaskStore } from '../../store/useTaskStore';
-import { getDb } from '../../db/client';
-import { updateSubtask } from '../../db/subtasks';
-import { colors, spacing, fontSize } from '../../theme';
-import type { Subtask } from '../../types';
+import React, { useRef, useState } from "react";
+import { TextInput, Pressable, StyleSheet } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { Checkbox } from "../ui/Checkbox";
+import { useTaskStore } from "../../store/useTaskStore";
+import { getDb } from "../../db/client";
+import { updateSubtask } from "../../db/subtasks";
+import { colors, spacing, fontSize } from "../../theme";
+import type { Subtask } from "../../types";
 
 interface SubtaskRowProps {
   subtask: Subtask;
@@ -25,10 +25,7 @@ export function SubtaskRow({ subtask }: SubtaskRowProps) {
   }
 
   return (
-    <Pressable
-      style={styles.row}
-      onLongPress={() => setShowDelete((v) => !v)}
-    >
+    <Pressable style={styles.row} onLongPress={() => setShowDelete((v) => !v)}>
       <Checkbox
         size={18}
         checked={subtask.done}
@@ -54,8 +51,8 @@ export function SubtaskRow({ subtask }: SubtaskRowProps) {
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: spacing[2],
     gap: spacing[2],
   },
@@ -66,7 +63,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   inputDone: {
-    textDecorationLine: 'line-through',
+    textDecorationLine: "line-through",
     opacity: 0.45,
   },
 });
