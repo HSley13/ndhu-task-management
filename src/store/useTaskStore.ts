@@ -12,6 +12,8 @@ import * as labelsDb from "../db/labels";
 import * as subtasksDb from "../db/subtasks";
 import * as attachmentsDb from "../db/attachments";
 import * as remindersDb from "../db/reminders";
+import * as locationRemindersDb from "../db/locationReminders";
+import type { LocationReminder } from "../types";
 
 interface TaskStore {
   tasks: Task[];
@@ -44,6 +46,12 @@ interface TaskStore {
 
   addReminder(task_id: string, offset_minutes: number): Promise<void>;
   deleteReminderByOffset(task_id: string, offset_minutes: number): Promise<void>;
+
+  addLocationReminder(
+    task_id: string,
+    data: Omit<LocationReminder, "id" | "task_id" | "expo_notification_id">,
+  ): Promise<void>;
+  deleteLocationReminder(id: string): Promise<void>;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -280,6 +288,52 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           ...s.openTask,
           reminders: s.openTask.reminders.filter(
             (r) => r.offset_minutes !== offset_minutes,
+          ),
+        },
+      };
+    });
+  },
+
+  async addLocationReminder(task_id, data) {
+    const db = await getDb();
+    const lr = await locationRemindersDb.insertLocationReminder(db, {
+      ...data,
+      task_id,
+      expo_notification_id: null,
+    });
+    const allForTask = await locationRemindersDb.getLocationRemindersForTask(
+      db,
+      task_id,
+    );
+    const { applyGeofences } = await import("../services/locationReminders");
+    await applyGeofences(allForTask).catch(() => {});
+    set((s) => {
+      if (!s.openTask || s.openTask.id !== task_id) return s;
+      return {
+        openTask: {
+          ...s.openTask,
+          location_reminders: [...s.openTask.location_reminders, lr],
+        },
+      };
+    });
+  },
+
+  async deleteLocationReminder(id) {
+    const db = await getDb();
+    const { openTask } = get();
+    await locationRemindersDb.deleteLocationReminder(db, id);
+    const remaining = (openTask?.location_reminders ?? []).filter(
+      (l) => l.id !== id,
+    );
+    const { applyGeofences } = await import("../services/locationReminders");
+    await applyGeofences(remaining).catch(() => {});
+    set((s) => {
+      if (!s.openTask) return s;
+      return {
+        openTask: {
+          ...s.openTask,
+          location_reminders: s.openTask.location_reminders.filter(
+            (l) => l.id !== id,
           ),
         },
       };

@@ -66,4 +66,15 @@ CREATE TABLE IF NOT EXISTS reminders (
   expo_notification_id TEXT,
   delivered INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS location_reminders (
+  id TEXT PRIMARY KEY,
+  task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  label TEXT NOT NULL,
+  latitude REAL NOT NULL,
+  longitude REAL NOT NULL,
+  radius_meters REAL NOT NULL DEFAULT 200,
+  trigger TEXT NOT NULL DEFAULT 'arrive',
+  expo_notification_id TEXT
+);
 `;

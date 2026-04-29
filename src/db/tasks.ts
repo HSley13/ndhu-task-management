@@ -6,6 +6,7 @@ import { getLabelsForTask } from "./labels";
 import { getSubtasksForTask } from "./subtasks";
 import { getAttachmentsForTask } from "./attachments";
 import { getRemindersForTask } from "./reminders";
+import { getLocationRemindersForTask } from "./locationReminders";
 
 function rowToTask(row: Record<string, unknown>): Task {
   return {
@@ -244,13 +245,15 @@ export async function getTaskWithRelations(
   db: SQLite.SQLiteDatabase,
   id: string,
 ): Promise<TaskFull> {
-  const [task, labels, subtasks, attachments, reminders] = await Promise.all([
-    getTaskById(db, id),
-    getLabelsForTask(db, id),
-    getSubtasksForTask(db, id),
-    getAttachmentsForTask(db, id),
-    getRemindersForTask(db, id),
-  ]);
+  const [task, labels, subtasks, attachments, reminders, location_reminders] =
+    await Promise.all([
+      getTaskById(db, id),
+      getLabelsForTask(db, id),
+      getSubtasksForTask(db, id),
+      getAttachmentsForTask(db, id),
+      getRemindersForTask(db, id),
+      getLocationRemindersForTask(db, id),
+    ]);
   if (!task) throw new Error(`getTaskWithRelations: task ${id} not found`);
-  return { ...task, labels, subtasks, attachments, reminders };
+  return { ...task, labels, subtasks, attachments, reminders, location_reminders };
 }

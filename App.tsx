@@ -15,6 +15,8 @@ import { useTaskStore } from './src/store/useTaskStore';
 import { useLabelStore } from './src/store/useLabelStore';
 import { useSettingsStore } from './src/store/useSettingsStore';
 import { rescheduleAllReminders } from './src/services/notifications';
+// Register the geofence background task at module level (must be top-level)
+import './src/services/locationReminders';
 import { colors } from './src/theme';
 
 // Configure notification handler — controls foreground behaviour

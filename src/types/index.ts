@@ -57,11 +57,23 @@ export interface Reminder {
   delivered: boolean;
 }
 
+export interface LocationReminder {
+  id: string;
+  task_id: string;
+  label: string; // place name
+  latitude: number;
+  longitude: number;
+  radius_meters: number;
+  trigger: "arrive" | "depart";
+  expo_notification_id: string | null;
+}
+
 export interface TaskFull extends Task {
   labels: Label[];
   subtasks: Subtask[];
   attachments: Attachment[];
   reminders: Reminder[];
+  location_reminders: LocationReminder[];
 }
 
 // Shape of assignment data returned by the backend server

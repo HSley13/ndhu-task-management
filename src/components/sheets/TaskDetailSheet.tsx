@@ -42,6 +42,7 @@ import {
   formatReminderOffset,
 } from "../ui/ReminderPickerModal";
 import { LabelPickerModal } from "../ui/LabelPickerModal";
+import { LocationReminderModal } from "../ui/LocationReminderModal";
 import type { TaskFull } from "../../types";
 
 // Platform-safe date picker: native only (web uses HTML input type="date")
@@ -71,6 +72,8 @@ export function TaskDetailSheet({
     addAttachment,
     addReminder,
     deleteReminderByOffset,
+    addLocationReminder,
+    deleteLocationReminder,
   } = useTaskStore();
   const { labels: allLabels } = useLabelStore();
   const snapPoints = useMemo(() => ["60%", "90%"], []);
@@ -88,6 +91,7 @@ export function TaskDetailSheet({
 
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
 
   async function pickImage() {
     if (Platform.OS !== "web") {
@@ -178,6 +182,7 @@ export function TaskDetailSheet({
     setShowTimePicker(false);
     setShowReminderModal(false);
     setShowLabelModal(false);
+    setShowLocationModal(false);
   }, [task?.id]);
 
   const renderBackdrop = useCallback(
@@ -463,6 +468,40 @@ export function TaskDetailSheet({
               />
             ))}
           </Pressable>
+
+          {/* Location reminder chip */}
+          <Pressable
+            style={[
+              styles.metaChip,
+              (task?.location_reminders?.length ?? 0) > 0 &&
+                styles.metaChipActive,
+            ]}
+            onPress={() => setShowLocationModal(true)}
+          >
+            <Feather
+              name="map-pin"
+              size={12}
+              color={
+                (task?.location_reminders?.length ?? 0) > 0
+                  ? colors.accent.default
+                  : colors.text.tertiary
+              }
+            />
+            <Text
+              style={[
+                styles.metaText,
+                (task?.location_reminders?.length ?? 0) > 0 && {
+                  color: colors.accent.default,
+                },
+              ]}
+            >
+              {(task?.location_reminders?.length ?? 0) > 0
+                ? task!.location_reminders.length === 1
+                  ? task!.location_reminders[0].label
+                  : `${task!.location_reminders.length} locations`
+                : "Location"}
+            </Text>
+          </Pressable>
         </View>
 
         {dueDateVal && (
@@ -475,6 +514,14 @@ export function TaskDetailSheet({
             onRemoveCustom={handleRemoveCustom}
           />
         )}
+
+        <LocationReminderModal
+          visible={showLocationModal}
+          onClose={() => setShowLocationModal(false)}
+          locationReminders={task?.location_reminders ?? []}
+          onAdd={(data) => addLocationReminder(task!.id, data)}
+          onDelete={deleteLocationReminder}
+        />
 
         {/* Date/time pickers */}
         {showDatePicker && Platform.OS !== "web" && (
