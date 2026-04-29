@@ -32,6 +32,9 @@ import {
   formatReminderOffset,
 } from "../ui/ReminderPickerModal";
 import { LabelPickerModal } from "../ui/LabelPickerModal";
+import { LocationReminderModal } from "../ui/LocationReminderModal";
+import type { LocationReminder } from "../../types";
+import { uuidv4 } from "../../utils/uuid";
 
 // Platform-safe date picker: native only (web uses HTML input type="date")
 const NativeDatePicker: React.ComponentType<any> =
@@ -45,7 +48,8 @@ interface AddTaskSheetProps {
 }
 
 export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
-  const { addTask, addAttachment, addReminder, setTaskLabels } = useTaskStore();
+  const { addTask, addAttachment, addReminder, setTaskLabels, addLocationReminder } =
+    useTaskStore();
   const { labels: allLabels } = useLabelStore();
   const { defaultReminderOffsets, autoReminders } = useSettingsStore();
   const snapPoints = useMemo(() => ["70%", "92%"], []);
@@ -64,8 +68,12 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
   const [pendingReminderOffsets, setPendingReminderOffsets] = useState<
     number[]
   >([]);
+  const [pendingLocationReminders, setPendingLocationReminders] = useState<
+    LocationReminder[]
+  >([]);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const renderBackdrop = useCallback(
@@ -100,8 +108,10 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
     setDueTime(null);
     setSelectedLabels([]);
     setPendingReminderOffsets([]);
+    setPendingLocationReminders([]);
     setShowReminderModal(false);
     setShowLabelModal(false);
+    setShowLocationModal(false);
     setLoading(false);
   }
 
@@ -139,6 +149,15 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
       }
       if (selectedLabels.length > 0) {
         await setTaskLabels(task.id, selectedLabels);
+      }
+      for (const lr of pendingLocationReminders) {
+        await addLocationReminder(task.id, {
+          label: lr.label,
+          latitude: lr.latitude,
+          longitude: lr.longitude,
+          radius_meters: lr.radius_meters,
+          trigger: lr.trigger,
+        });
       }
       reset();
       sheetRef.current?.dismiss();
@@ -391,6 +410,37 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
               </Text>
             </Pressable>
           )}
+
+          {/* Location reminder chip — always visible */}
+          <Pressable
+            style={[
+              styles.datePill,
+              pendingLocationReminders.length > 0 && styles.datePillActive,
+            ]}
+            onPress={() => setShowLocationModal(true)}
+          >
+            <Feather
+              name="map-pin"
+              size={14}
+              color={
+                pendingLocationReminders.length > 0
+                  ? colors.accent.default
+                  : colors.text.tertiary
+              }
+            />
+            <Text
+              style={[
+                styles.datePillText,
+                pendingLocationReminders.length > 0 && styles.dateActive,
+              ]}
+            >
+              {pendingLocationReminders.length > 0
+                ? pendingLocationReminders.length === 1
+                  ? pendingLocationReminders[0].label
+                  : `${pendingLocationReminders.length} locations`
+                : "Location"}
+            </Text>
+          </Pressable>
         </View>
 
         {showDatePicker && Platform.OS !== "web" && (
@@ -501,6 +551,23 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
           onClose={() => setShowLabelModal(false)}
           selectedIds={selectedLabels}
           onApply={(ids) => setSelectedLabels(ids)}
+        />
+
+        <LocationReminderModal
+          visible={showLocationModal}
+          onClose={() => setShowLocationModal(false)}
+          locationReminders={pendingLocationReminders}
+          onAdd={async (data) => {
+            setPendingLocationReminders((prev) => [
+              ...prev,
+              { ...data, id: uuidv4(), task_id: "", expo_notification_id: null },
+            ]);
+          }}
+          onDelete={async (id) => {
+            setPendingLocationReminders((prev) =>
+              prev.filter((lr) => lr.id !== id),
+            );
+          }}
         />
 
         <Button
