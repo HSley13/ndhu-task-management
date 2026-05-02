@@ -7,6 +7,7 @@ import { CalendarStack } from "./CalendarStack";
 import { ListStack } from "./ListStack";
 import { NotesStack } from "./NotesStack";
 import { SettingsScreen } from "../screens/SettingsScreen";
+import { StatsScreen } from "../screens/StatsScreen";
 import { colors, radius, spacing } from "../theme";
 import type { AppTabsParamList } from "./types";
 
@@ -86,6 +87,16 @@ export function AppTabs() {
           tabBarLabel: "Notes",
           tabBarIcon: ({ color, size }) => (
             <Feather name="file-text" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="StatsTab"
+        component={StatsScreen}
+        options={{
+          tabBarLabel: "Stats",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="bar-chart-2" size={size} color={color} />
           ),
         }}
       />

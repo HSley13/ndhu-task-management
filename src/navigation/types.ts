@@ -29,6 +29,7 @@ export type AppTabsParamList = {
   CalendarTab: NavigatorScreenParams<CalendarStackParamList>;
   ListTab: NavigatorScreenParams<ListStackParamList>;
   NotesTab: NavigatorScreenParams<NotesStackParamList>;
+  StatsTab: undefined;
   SettingsTab: undefined;
 };
 
