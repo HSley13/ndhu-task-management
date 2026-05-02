@@ -10,6 +10,7 @@ import {
   LayoutAnimation,
   Platform,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -21,12 +22,15 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTaskStore } from "../store/useTaskStore";
 import { useLabelStore } from "../store/useLabelStore";
 import { useSync } from "../hooks/useSync";
+import { useHaptics } from "../hooks/useHaptics";
 import { colors, spacing, radius, fontSize } from "../theme";
 import { TaskRow } from "../components/task/TaskRow";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Badge } from "../components/ui/Badge";
 import { TaskDetailSheet } from "../components/sheets/TaskDetailSheet";
 import { AddTaskSheet } from "../components/sheets/AddTaskSheet";
+import { PostponeSheet } from "../components/sheets/PostponeSheet";
+import { LabelPickerModal } from "../components/ui/LabelPickerModal";
 import { groupTasksBySection } from "../utils/date";
 import type { Task } from "../types";
 import type { ListStackParamList } from "../navigation/types";
@@ -36,14 +40,58 @@ export function ListScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const navigation =
     useNavigation<NativeStackNavigationProp<ListStackParamList>>();
-  const { tasks, openTask } = useTaskStore();
+  const { tasks, openTask, bulkMarkDone, bulkDelete, bulkSetLabels } = useTaskStore();
   const { labels } = useLabelStore();
   const { progressStyle } = useSync();
+  const haptics = useHaptics();
 
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [postponeTaskId, setPostponeTaskId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showBulkLabelModal, setShowBulkLabelModal] = useState(false);
+  const [showBulkPostpone, setShowBulkPostpone] = useState(false);
+  const isSelecting = selectedIds.length > 0;
   const searchInputRef = useRef<TextInput>(null);
+
+  function enterSelectMode(id: string) {
+    haptics.medium();
+    setSelectedIds([id]);
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  function exitSelect() {
+    setSelectedIds([]);
+  }
+
+  async function handleBulkComplete() {
+    await bulkMarkDone(selectedIds);
+    exitSelect();
+  }
+
+  async function handleBulkDelete() {
+    Alert.alert(
+      `Delete ${selectedIds.length} task${selectedIds.length > 1 ? "s" : ""}?`,
+      "This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await bulkDelete(selectedIds);
+            exitSelect();
+          },
+        },
+      ],
+    );
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -51,6 +99,7 @@ export function ListScreen() {
       setSearchOpen(false);
       setSearch("");
       setSearchFocused(false);
+      setSelectedIds([]);
       Keyboard.dismiss();
       searchInputRef.current?.blur();
     }, []),
@@ -106,8 +155,8 @@ export function ListScreen() {
     detailSheetRef.current?.present();
   }
 
-  function handlePostpone(_id: string) {
-    // Postpone feature removed — noop
+  function handlePostpone(id: string) {
+    setPostponeTaskId(id);
   }
 
   const sectionTitles: Record<string, string> = {
@@ -130,7 +179,29 @@ export function ListScreen() {
 
       {/* Header / collapsible search */}
       <View style={styles.header}>
-        {!searchOpen ? (
+        {isSelecting ? (
+          <>
+            <Pressable onPress={exitSelect} hitSlop={8}>
+              <Feather name="x" size={22} color={colors.text.primary} />
+            </Pressable>
+            <Text style={styles.heading}>{selectedIds.length} selected</Text>
+            <View style={{ flex: 1 }} />
+            <Pressable
+              hitSlop={8}
+              onPress={() => {
+                const allIds = filteredTasks.map((t) => t.id);
+                const allSelected = allIds.every((id) => selectedIds.includes(id));
+                setSelectedIds(allSelected ? [] : allIds);
+              }}
+            >
+              <Text style={styles.cancelText}>
+                {filteredTasks.every((t) => selectedIds.includes(t.id))
+                  ? "None"
+                  : "All"}
+              </Text>
+            </Pressable>
+          </>
+        ) : !searchOpen ? (
           <>
             <Text style={styles.heading}>Tasks</Text>
             <Badge
@@ -221,6 +292,10 @@ export function ListScreen() {
               labels={[]}
               onPress={() => handleTaskPress(item)}
               onPostpone={() => handlePostpone(item.id)}
+              isSelecting={isSelecting}
+              selected={selectedIds.includes(item.id)}
+              onSelect={() => toggleSelect(item.id)}
+              onEnterSelectMode={() => enterSelectMode(item.id)}
             />
           )}
           stickySectionHeadersEnabled={Platform.OS === "ios"}
@@ -232,13 +307,37 @@ export function ListScreen() {
       )}
 
       {/* FAB */}
-      <TouchableOpacity
-        style={[styles.fab, { bottom: tabBarHeight + spacing[4] }]}
-        onPress={() => addSheetRef.current?.present()}
-        activeOpacity={0.85}
-      >
-        <Feather name="plus" size={28} color="#fff" />
-      </TouchableOpacity>
+      {!isSelecting && (
+        <TouchableOpacity
+          style={[styles.fab, { bottom: tabBarHeight + spacing[4] }]}
+          onPress={() => addSheetRef.current?.present()}
+          activeOpacity={0.85}
+        >
+          <Feather name="plus" size={28} color="#fff" />
+        </TouchableOpacity>
+      )}
+
+      {/* Bulk action bar */}
+      {isSelecting && (
+        <View style={[styles.bulkBar, { bottom: tabBarHeight }]}>
+          <Pressable style={styles.bulkBtn} onPress={handleBulkComplete}>
+            <Feather name="check-circle" size={20} color={colors.success} />
+            <Text style={[styles.bulkBtnText, { color: colors.success }]}>Done</Text>
+          </Pressable>
+          <Pressable style={styles.bulkBtn} onPress={() => setShowBulkLabelModal(true)}>
+            <Feather name="tag" size={20} color={colors.text.secondary} />
+            <Text style={styles.bulkBtnText}>Label</Text>
+          </Pressable>
+          <Pressable style={styles.bulkBtn} onPress={() => setShowBulkPostpone(true)}>
+            <Feather name="clock" size={20} color={colors.text.secondary} />
+            <Text style={styles.bulkBtnText}>Postpone</Text>
+          </Pressable>
+          <Pressable style={styles.bulkBtn} onPress={handleBulkDelete}>
+            <Feather name="trash-2" size={20} color={colors.danger} />
+            <Text style={[styles.bulkBtnText, { color: colors.danger }]}>Delete</Text>
+          </Pressable>
+        </View>
+      )}
 
       {/* Sheets */}
       <TaskDetailSheet
@@ -250,6 +349,30 @@ export function ListScreen() {
         }}
       />
       <AddTaskSheet sheetRef={addSheetRef} />
+      <PostponeSheet
+        visible={postponeTaskId !== null}
+        taskId={postponeTaskId}
+        onClose={() => setPostponeTaskId(null)}
+      />
+      <PostponeSheet
+        visible={showBulkPostpone}
+        taskId={null}
+        taskIds={selectedIds}
+        onClose={() => {
+          setShowBulkPostpone(false);
+          exitSelect();
+        }}
+      />
+      <LabelPickerModal
+        visible={showBulkLabelModal}
+        selectedIds={[]}
+        onClose={() => setShowBulkLabelModal(false)}
+        onApply={async (ids) => {
+          await bulkSetLabels(selectedIds, ids);
+          setShowBulkLabelModal(false);
+          exitSelect();
+        }}
+      />
     </View>
   );
 }
@@ -354,5 +477,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 16,
     elevation: 12,
+  },
+  bulkBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    backgroundColor: colors.bg.elevated,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.subtle,
+    paddingVertical: spacing[2],
+  },
+  bulkBtn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingVertical: spacing[2],
+  },
+  bulkBtnText: {
+    fontSize: fontSize.xs,
+    color: colors.text.secondary,
+    fontWeight: "600",
   },
 });

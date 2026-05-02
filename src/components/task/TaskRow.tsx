@@ -14,9 +14,22 @@ interface TaskRowProps {
   labels: Label[];
   onPress: () => void;
   onPostpone: () => void;
+  isSelecting?: boolean;
+  selected?: boolean;
+  onSelect?: () => void;
+  onEnterSelectMode?: () => void;
 }
 
-export function TaskRow({ task, labels, onPress, onPostpone }: TaskRowProps) {
+export function TaskRow({
+  task,
+  labels,
+  onPress,
+  onPostpone,
+  isSelecting = false,
+  selected = false,
+  onSelect,
+  onEnterSelectMode,
+}: TaskRowProps) {
   const { toggleDone, togglePin, deleteTask } = useTaskStore();
   const haptics = useHaptics();
   const overdue = isOverdue(task);
@@ -30,6 +43,10 @@ export function TaskRow({ task, labels, onPress, onPostpone }: TaskRowProps) {
 
   function handleLongPress() {
     haptics.medium();
+    if (onEnterSelectMode) {
+      onEnterSelectMode();
+      return;
+    }
     Alert.alert(task.title, undefined, [
       {
         text: task.is_pinned ? "Unpin" : "Pin",
@@ -44,14 +61,37 @@ export function TaskRow({ task, labels, onPress, onPostpone }: TaskRowProps) {
     ]);
   }
 
+  function handlePress() {
+    if (isSelecting) {
+      onSelect?.();
+    } else {
+      onPress();
+    }
+  }
+
   return (
     <TouchableOpacity
-      style={[styles.row, { borderLeftColor: borderColor }]}
-      onPress={onPress}
+      style={[
+        styles.row,
+        { borderLeftColor: borderColor },
+        isSelecting && selected && styles.rowSelected,
+      ]}
+      onPress={handlePress}
       onLongPress={handleLongPress}
       activeOpacity={0.7}
     >
-      <Checkbox checked={isDone} onChange={() => toggleDone(task.id)} />
+      {isSelecting ? (
+        <View
+          style={[
+            styles.selectCircle,
+            selected && styles.selectCircleChecked,
+          ]}
+        >
+          {selected && <Feather name="check" size={13} color="#fff" />}
+        </View>
+      ) : (
+        <Checkbox checked={isDone} onChange={() => toggleDone(task.id)} />
+      )}
       <View style={styles.content}>
         <Text
           style={[styles.title, isDone && styles.titleDone]}
@@ -170,5 +210,21 @@ const styles = StyleSheet.create({
   labelChipText: {
     fontSize: 10,
     fontWeight: "500",
+  },
+  rowSelected: {
+    backgroundColor: colors.accent.default + "1A",
+  },
+  selectCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.border.strong,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectCircleChecked: {
+    backgroundColor: colors.accent.default,
+    borderColor: colors.accent.default,
   },
 });

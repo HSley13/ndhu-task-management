@@ -39,24 +39,26 @@ export interface PostponeModalProps {
   visible: boolean;
   onClose: () => void;
   taskId: string | null;
+  /** Optional list of IDs for bulk postpone — overrides taskId */
+  taskIds?: string[];
 }
 
 export function PostponeSheet({
   visible,
   onClose,
   taskId,
+  taskIds,
 }: PostponeModalProps) {
   const { postponeTask } = useTaskStore();
   const [showCustomPicker, setShowCustomPicker] = useState(false);
   const [customDate, setCustomDate] = useState<Date | null>(null);
 
   async function commit(date: Date) {
-    if (!taskId) return;
-    await postponeTask(
-      taskId,
-      format(date, "yyyy-MM-dd"),
-      format(date, "HH:mm:ss"),
-    );
+    const ids = taskIds ?? (taskId ? [taskId] : []);
+    if (ids.length === 0) return;
+    for (const id of ids) {
+      await postponeTask(id, format(date, "yyyy-MM-dd"), format(date, "HH:mm:ss"));
+    }
     handleClose();
   }
 
@@ -67,7 +69,8 @@ export function PostponeSheet({
   }
 
   async function handleSelect(option: PostponeOption) {
-    if (!taskId) return;
+    const ids = taskIds ?? (taskId ? [taskId] : []);
+    if (ids.length === 0) return;
     if (option.type === "custom") {
       setShowCustomPicker(true);
       return;
