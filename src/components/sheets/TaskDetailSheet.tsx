@@ -665,7 +665,7 @@ export function TaskDetailSheet({
                 onPress={pickImage}
                 hitSlop={8}
               >
-                <Feather name="image" size={16} color={colors.text.secondary} />
+                <Feather name="image" size={16} color={colors.text.tertiary} />
               </Pressable>
               <Pressable
                 style={styles.attActionBtn}
@@ -675,7 +675,7 @@ export function TaskDetailSheet({
                 <Feather
                   name="camera"
                   size={16}
-                  color={colors.text.secondary}
+                  color={colors.text.tertiary}
                 />
               </Pressable>
               <Pressable
@@ -686,7 +686,7 @@ export function TaskDetailSheet({
                 <Feather
                   name="paperclip"
                   size={16}
-                  color={colors.text.secondary}
+                  color={colors.text.tertiary}
                 />
               </Pressable>
             </View>
@@ -944,17 +944,13 @@ const styles = StyleSheet.create({
   },
   attActions: {
     flexDirection: "row",
-    gap: spacing[2],
+    gap: spacing[3],
   },
   attActionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.md,
-    backgroundColor: colors.bg.elevated,
+    width: 28,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
   },
   emptyAtt: {
     fontSize: fontSize.sm,

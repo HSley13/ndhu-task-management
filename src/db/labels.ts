@@ -60,6 +60,14 @@ export async function getLabelsForTask(
   return rows.map(rowToLabel);
 }
 
+export async function getAllTaskLabelJoins(
+  db: SQLite.SQLiteDatabase,
+): Promise<{ task_id: string; label_id: string }[]> {
+  return db.getAllAsync<{ task_id: string; label_id: string }>(
+    "SELECT task_id, label_id FROM task_labels",
+  );
+}
+
 export async function setLabelsForTask(
   db: SQLite.SQLiteDatabase,
   task_id: string,

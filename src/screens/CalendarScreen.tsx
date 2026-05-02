@@ -15,7 +15,6 @@ import { format } from "date-fns";
 import { Feather } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetModal } from "@gorhom/bottom-sheet";
 import { useTaskStore } from "../store/useTaskStore";
-import { useLabelStore } from "../store/useLabelStore";
 import { colors, spacing, radius, fontSize } from "../theme";
 import { isOverdue } from "../utils/date";
 import { AddTaskSheet } from "../components/sheets/AddTaskSheet";
@@ -28,7 +27,6 @@ export function CalendarScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { tasks } = useTaskStore();
-  const { labels } = useLabelStore();
   const [selected, setSelected] = useState(format(new Date(), "yyyy-MM-dd"));
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const addSheetRef = useRef<BottomSheetModal>(null);
@@ -38,11 +36,12 @@ export function CalendarScreen({ navigation }: Props) {
     const map: Record<string, any> = {};
     tasks.forEach((task) => {
       if (!task.due_date) return;
-      const taskLabels = labels.filter((l) => task.status !== "done");
-      const dots = taskLabels
-        .slice(0, 3)
-        .map((l) => ({ color: l.color, key: l.id }));
-      const dotColor = isOverdue(task) ? colors.danger : colors.accent.default;
+      const dotColor =
+        task.status === "done"
+          ? colors.danger + "66"
+          : isOverdue(task)
+            ? colors.danger
+            : colors.accent.default;
       if (!map[task.due_date]) {
         map[task.due_date] = { dots: [] };
       }

@@ -5,18 +5,38 @@ import * as labelsDb from "../db/labels";
 
 interface LabelStore {
   labels: Label[];
+  taskLabelMap: Record<string, string[]>; // task_id -> label_id[]
   loadLabels(): Promise<void>;
+  refreshTaskLabelMap(): Promise<void>;
   addLabel(name: string, color: string): Promise<Label>;
   deleteLabel(id: string): Promise<void>;
 }
 
 export const useLabelStore = create<LabelStore>((set) => ({
   labels: [],
+  taskLabelMap: {},
 
   async loadLabels() {
     const db = await getDb();
     const labels = await labelsDb.getAllLabels(db);
-    set({ labels });
+    const joins = await labelsDb.getAllTaskLabelJoins(db);
+    const taskLabelMap: Record<string, string[]> = {};
+    for (const { task_id, label_id } of joins) {
+      if (!taskLabelMap[task_id]) taskLabelMap[task_id] = [];
+      taskLabelMap[task_id].push(label_id);
+    }
+    set({ labels, taskLabelMap });
+  },
+
+  async refreshTaskLabelMap() {
+    const db = await getDb();
+    const joins = await labelsDb.getAllTaskLabelJoins(db);
+    const taskLabelMap: Record<string, string[]> = {};
+    for (const { task_id, label_id } of joins) {
+      if (!taskLabelMap[task_id]) taskLabelMap[task_id] = [];
+      taskLabelMap[task_id].push(label_id);
+    }
+    set({ taskLabelMap });
   },
 
   async addLabel(name, color) {

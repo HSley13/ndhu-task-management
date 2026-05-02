@@ -30,7 +30,7 @@ export function DayDetailScreen({ route, navigation }: Props) {
   const tabBarHeight = useBottomTabBarHeight();
   const { date } = route.params;
   const { tasks, openTaskDetail, openTask } = useTaskStore();
-  const { labels } = useLabelStore();
+  const { labels, taskLabelMap } = useLabelStore();
   const detailSheetRef = useRef<BottomSheetModal>(null);
   const addSheetRef = useRef<BottomSheetModal>(null);
 
@@ -72,8 +72,8 @@ export function DayDetailScreen({ route, navigation }: Props) {
           sections={[{ title: "Tasks", data: dayTasks }]}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
-            const taskLabels = labels.filter(
-              (l) => /* label joins would need store — simplified */ false,
+            const taskLabels = labels.filter((l) =>
+              (taskLabelMap[item.id] ?? []).includes(l.id),
             );
             return (
               <TaskCard

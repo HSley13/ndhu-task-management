@@ -17,6 +17,10 @@ import { colors, spacing, radius, fontSize } from "../theme";
 import { Button } from "../components/ui/Button";
 import { Divider } from "../components/ui/Divider";
 import { format } from "date-fns";
+import {
+  ReminderPickerModal,
+  formatReminderOffset,
+} from "../components/ui/ReminderPickerModal";
 
 function Row({
   label,
@@ -45,8 +49,9 @@ export function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { student_id: studentId, logout } = useAuthStore();
-  const { autoReminders, setAutoReminders, lastSyncedAt } = useSettingsStore();
+  const { autoReminders, setAutoReminders, lastSyncedAt, defaultReminderOffsets, setDefaultReminderOffsets } = useSettingsStore();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showReminderPicker, setShowReminderPicker] = useState(false);
 
   async function handleLogout() {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -112,6 +117,16 @@ export function SettingsScreen() {
               />
             }
           />
+          <Divider spacing={0} />
+          <Row
+            label="Default Reminders"
+            value={
+              defaultReminderOffsets.length === 0
+                ? "None"
+                : defaultReminderOffsets.map(formatReminderOffset).join(", ")
+            }
+            onPress={() => setShowReminderPicker(true)}
+          />
         </View>
 
         {/* About */}
@@ -129,6 +144,31 @@ export function SettingsScreen() {
           style={styles.signOutBtn}
         />
       </ScrollView>
+
+      <ReminderPickerModal
+        visible={showReminderPicker}
+        onClose={() => setShowReminderPicker(false)}
+        activeOffsets={defaultReminderOffsets}
+        onToggleOffset={(offset) =>
+          setDefaultReminderOffsets(
+            defaultReminderOffsets.includes(offset)
+              ? defaultReminderOffsets.filter((o) => o !== offset)
+              : [...defaultReminderOffsets, offset],
+          )
+        }
+        onAddCustom={(offset) =>
+          setDefaultReminderOffsets(
+            defaultReminderOffsets.includes(offset)
+              ? defaultReminderOffsets
+              : [...defaultReminderOffsets, offset],
+          )
+        }
+        onRemoveCustom={(offset) =>
+          setDefaultReminderOffsets(
+            defaultReminderOffsets.filter((o) => o !== offset),
+          )
+        }
+      />
     </View>
   );
 }
