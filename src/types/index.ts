@@ -1,5 +1,6 @@
 export type TaskSource = "moodle" | "manual";
 export type TaskStatus = "pending" | "done" | "postponed";
+export type RecurRule = "daily" | "weekly" | "monthly" | "custom";
 export type CalendarView = "month" | "week" | "day" | "year" | "list";
 
 export interface Task {
@@ -16,6 +17,9 @@ export interface Task {
   moodle_url: string | null;
   moodle_event_id: number | null;
   postponed_until: string | null; // ISO 8601
+  recur_rule: RecurRule | null;
+  recur_dates: string[] | null; // specific dates (yyyy-MM-dd) for custom recurrence
+  completed_at: string | null; // ISO 8601, set when status → done
   created_at: string;
   updated_at: string;
 }

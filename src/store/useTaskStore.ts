@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { addDays, addWeeks, addMonths, parseISO, format } from "date-fns";
 import type {
   Task,
   TaskFull,
@@ -52,6 +53,10 @@ interface TaskStore {
     data: Omit<LocationReminder, "id" | "task_id" | "expo_notification_id">,
   ): Promise<void>;
   deleteLocationReminder(id: string): Promise<void>;
+
+  bulkMarkDone(ids: string[]): Promise<void>;
+  bulkDelete(ids: string[]): Promise<void>;
+  bulkSetLabels(ids: string[], label_ids: string[]): Promise<void>;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -108,7 +113,58 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       );
       await cancelRemindersForTask(id).catch(() => {});
     }
-    await get().updateTask(id, { status: newStatus });
+    const completedAt = newStatus === "done" ? new Date().toISOString() : null;
+    await get().updateTask(id, { status: newStatus, completed_at: completedAt });
+    // Spawn next occurrence for recurring tasks
+    if (newStatus === "done" && task.recur_rule && task.due_date) {
+      if (task.recur_rule === "custom") {
+        // Find the next date in recur_dates that is after the current due_date
+        const sorted = (task.recur_dates ?? []).slice().sort();
+        const nextDateStr = sorted.find((d) => d > task.due_date!);
+        if (nextDateStr) {
+          await get().addTask({
+            title: task.title,
+            course: task.course,
+            due_date: nextDateStr,
+            due_time: task.due_time,
+            source: task.source,
+            status: "pending",
+            is_pinned: false,
+            is_note: false,
+            note_content: task.note_content,
+            moodle_url: null,
+            moodle_event_id: null,
+            postponed_until: null,
+            recur_rule: "custom",
+            recur_dates: task.recur_dates,
+            completed_at: null,
+          });
+        }
+      } else {
+        const dueDate = parseISO(task.due_date);
+        let nextDate: Date;
+        if (task.recur_rule === "daily") nextDate = addDays(dueDate, 1);
+        else if (task.recur_rule === "weekly") nextDate = addWeeks(dueDate, 1);
+        else nextDate = addMonths(dueDate, 1);
+        await get().addTask({
+          title: task.title,
+          course: task.course,
+          due_date: format(nextDate, "yyyy-MM-dd"),
+          due_time: task.due_time,
+          source: task.source,
+          status: "pending",
+          is_pinned: false,
+          is_note: false,
+          note_content: task.note_content,
+          moodle_url: null,
+          moodle_event_id: null,
+          postponed_until: null,
+          recur_rule: task.recur_rule,
+          recur_dates: null,
+          completed_at: null,
+        });
+      }
+    }
   },
 
   async togglePin(id) {
@@ -218,6 +274,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       if (!s.openTask || s.openTask.id !== task_id) return s;
       return { openTask: { ...s.openTask, labels: newLabels } };
     });
+    const { useLabelStore } = await import("./useLabelStore");
+    useLabelStore.getState().refreshTaskLabelMap();
   },
 
   async addAttachment(task_id, attachment) {
@@ -338,5 +396,26 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         },
       };
     });
+  },
+
+  async bulkMarkDone(ids) {
+    for (const id of ids) {
+      const task = get().tasks.find((t) => t.id === id);
+      if (task && task.status !== "done") {
+        await get().toggleDone(id);
+      }
+    }
+  },
+
+  async bulkDelete(ids) {
+    for (const id of ids) {
+      await get().deleteTask(id);
+    }
+  },
+
+  async bulkSetLabels(ids, label_ids) {
+    for (const id of ids) {
+      await get().setTaskLabels(id, label_ids);
+    }
   },
 }));

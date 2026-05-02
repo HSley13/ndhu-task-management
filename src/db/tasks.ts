@@ -1,7 +1,7 @@
 import * as SQLite from "expo-sqlite";
 import { uuidv4 } from "../utils/uuid";
 import { format, fromUnixTime } from "date-fns";
-import type { Task, RawAssignment, TaskFull } from "../types";
+import type { Task, RecurRule, RawAssignment, TaskFull } from "../types";
 import { getLabelsForTask } from "./labels";
 import { getSubtasksForTask } from "./subtasks";
 import { getAttachmentsForTask } from "./attachments";
@@ -23,6 +23,11 @@ function rowToTask(row: Record<string, unknown>): Task {
     moodle_url: (row["moodle_url"] as string | null) ?? null,
     moodle_event_id: (row["moodle_event_id"] as number | null) ?? null,
     postponed_until: (row["postponed_until"] as string | null) ?? null,
+    recur_rule: (row["recur_rule"] as RecurRule | null) ?? null,
+    recur_dates: row["recur_dates"]
+      ? (JSON.parse(row["recur_dates"] as string) as string[])
+      : null,
+    completed_at: (row["completed_at"] as string | null) ?? null,
     created_at: row["created_at"] as string,
     updated_at: row["updated_at"] as string,
   };
@@ -37,8 +42,8 @@ export async function insertTask(
   await db.runAsync(
     `INSERT INTO tasks (id, title, course, due_date, due_time, source, status,
        is_pinned, is_note, note_content, moodle_url, moodle_event_id, postponed_until,
-       created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       recur_rule, recur_dates, completed_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     id,
     data.title,
     data.course ?? null,
@@ -52,6 +57,9 @@ export async function insertTask(
     data.moodle_url ?? null,
     data.moodle_event_id ?? null,
     data.postponed_until ?? null,
+    data.recur_rule ?? null,
+    data.recur_dates ? JSON.stringify(data.recur_dates) : null,
+    data.completed_at ?? null,
     now,
     now,
   );
@@ -93,6 +101,10 @@ export async function updateTask(
     set("moodle_event_id", patch.moodle_event_id ?? null);
   if (patch.postponed_until !== undefined)
     set("postponed_until", patch.postponed_until ?? null);
+  if (patch.recur_rule !== undefined) set("recur_rule", patch.recur_rule ?? null);
+  if (patch.recur_dates !== undefined)
+    set("recur_dates", patch.recur_dates ? JSON.stringify(patch.recur_dates) : null);
+  if (patch.completed_at !== undefined) set("completed_at", patch.completed_at ?? null);
   if (patch.updated_at !== undefined) set("updated_at", patch.updated_at);
   else set("updated_at", now);
 

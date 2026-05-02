@@ -31,4 +31,18 @@ export async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
       await db.execAsync(stmt);
     }
   });
+
+  // Column-level migrations for additive schema changes (safe to retry)
+  const columnMigrations = [
+    "ALTER TABLE tasks ADD COLUMN recur_rule TEXT",
+    "ALTER TABLE tasks ADD COLUMN completed_at TEXT",
+    "ALTER TABLE tasks ADD COLUMN recur_dates TEXT",
+  ];
+  for (const migration of columnMigrations) {
+    try {
+      await db.execAsync(migration);
+    } catch (_) {
+      // Column already exists — ignore
+    }
+  }
 }

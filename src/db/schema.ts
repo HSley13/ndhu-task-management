@@ -13,6 +13,9 @@ CREATE TABLE IF NOT EXISTS tasks (
   moodle_url TEXT,
   moodle_event_id INTEGER UNIQUE,
   postponed_until TEXT,
+  recur_rule TEXT,
+  recur_dates TEXT,
+  completed_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

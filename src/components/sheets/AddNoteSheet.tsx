@@ -65,6 +65,9 @@ export function AddNoteSheet({ sheetRef, onNoteCreated }: AddNoteSheetProps) {
         moodle_url: null,
         moodle_event_id: null,
         postponed_until: null,
+        recur_rule: null,
+        recur_dates: null,
+        completed_at: null,
       });
       reset();
       sheetRef.current?.close();

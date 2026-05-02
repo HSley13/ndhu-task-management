@@ -33,7 +33,10 @@ import {
 } from "../ui/ReminderPickerModal";
 import { LabelPickerModal } from "../ui/LabelPickerModal";
 import { LocationReminderModal } from "../ui/LocationReminderModal";
+import { RecurDatePickerModal } from "../modals/RecurDatePickerModal";
 import type { LocationReminder } from "../../types";
+
+type SimpleRecurRule = "daily" | "weekly" | "monthly";
 import { uuidv4 } from "../../utils/uuid";
 
 // Platform-safe date picker: native only (web uses HTML input type="date")
@@ -74,6 +77,9 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showRecurModal, setShowRecurModal] = useState(false);
+  const [recurRule, setRecurRule] = useState<SimpleRecurRule | null>(null);
+  const [recurDates, setRecurDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const renderBackdrop = useCallback(
@@ -112,6 +118,9 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
     setShowReminderModal(false);
     setShowLabelModal(false);
     setShowLocationModal(false);
+    setShowRecurModal(false);
+    setRecurRule(null);
+    setRecurDates([]);
     setLoading(false);
   }
 
@@ -133,6 +142,9 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
         moodle_url: null,
         moodle_event_id: null,
         postponed_until: null,
+        recur_rule: recurDates.length > 0 ? "custom" : recurRule ?? null,
+        recur_dates: recurDates.length > 0 ? recurDates : null,
+        completed_at: null,
       });
       for (const att of pendingAttachments) {
         await addAttachment(task.id, { ...att, task_id: task.id });
@@ -443,6 +455,87 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
           </Pressable>
         </View>
 
+        {/* Repeat row — only when due date is set */}
+        {dueDate && (
+          <View style={styles.dateRow}>
+            <Feather
+              name="repeat"
+              size={14}
+              color={
+                recurRule || recurDates.length > 0
+                  ? colors.accent.default
+                  : colors.text.tertiary
+              }
+            />
+            {(["daily", "weekly", "monthly"] as SimpleRecurRule[]).map(
+              (rule) => (
+                <Pressable
+                  key={rule}
+                  style={[
+                    styles.datePill,
+                    recurRule === rule && styles.datePillActive,
+                  ]}
+                  onPress={() => {
+                    setRecurRule(recurRule === rule ? null : rule);
+                    setRecurDates([]);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.datePillText,
+                      recurRule === rule && styles.dateActive,
+                    ]}
+                  >
+                    {rule.charAt(0).toUpperCase() + rule.slice(1)}
+                  </Text>
+                </Pressable>
+              ),
+            )}
+            <Pressable
+              style={[
+                styles.datePill,
+                recurDates.length > 0 && styles.datePillActive,
+              ]}
+              onPress={() => setShowRecurModal(true)}
+            >
+              <Feather
+                name="calendar"
+                size={13}
+                color={
+                  recurDates.length > 0
+                    ? colors.accent.default
+                    : colors.text.tertiary
+                }
+              />
+              <Text
+                style={[
+                  styles.datePillText,
+                  recurDates.length > 0 && styles.dateActive,
+                ]}
+              >
+                {recurDates.length > 0
+                  ? `${recurDates.length}d`
+                  : "Custom"}
+              </Text>
+              {recurDates.length > 0 && (
+                <Pressable
+                  hitSlop={6}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setRecurDates([]);
+                  }}
+                >
+                  <Feather
+                    name="x"
+                    size={11}
+                    color={colors.accent.default}
+                  />
+                </Pressable>
+              )}
+            </Pressable>
+          </View>
+        )}
+
         {showDatePicker && Platform.OS !== "web" && (
           <NativeDatePicker
             value={dueDate ?? new Date()}
@@ -568,6 +661,13 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
               prev.filter((lr) => lr.id !== id),
             );
           }}
+        />
+
+        <RecurDatePickerModal
+          visible={showRecurModal}
+          onClose={() => setShowRecurModal(false)}
+          onConfirm={(dates) => setRecurDates(dates)}
+          initialDates={recurDates}
         />
 
         <Button

@@ -170,6 +170,9 @@ export function NoteEditorScreen() {
           moodle_url: null,
           moodle_event_id: null,
           postponed_until: null,
+          recur_rule: null,
+          recur_dates: null,
+          completed_at: null,
         });
         for (const att of pendingAttachments) {
           await addAttachment(task.id, { task_id: task.id, ...att });
@@ -367,16 +370,16 @@ export function NoteEditorScreen() {
           <Text style={styles.attHeaderLabel}>Attachments</Text>
           <View style={styles.attActions}>
             <Pressable style={styles.attAction} onPress={pickImage} hitSlop={6}>
-              <Feather name="image" size={18} color={colors.text.secondary} />
+              <Feather name="image" size={18} color={colors.text.tertiary} />
             </Pressable>
             <Pressable style={styles.attAction} onPress={takePhoto} hitSlop={6}>
-              <Feather name="camera" size={18} color={colors.text.secondary} />
+              <Feather name="camera" size={18} color={colors.text.tertiary} />
             </Pressable>
             <Pressable style={styles.attAction} onPress={pickFile} hitSlop={6}>
               <Feather
                 name="paperclip"
                 size={18}
-                color={colors.text.secondary}
+                color={colors.text.tertiary}
               />
             </Pressable>
           </View>
@@ -504,15 +507,13 @@ const styles = StyleSheet.create({
   },
   attActions: {
     flexDirection: "row",
-    gap: spacing[1],
+    gap: spacing[2],
   },
   attAction: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.sm,
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.bg.elevated,
   },
   attEmpty: {
     paddingHorizontal: spacing[4],
