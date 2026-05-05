@@ -12,7 +12,7 @@ import {
   Linking,
   Alert,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 import { WebView } from "react-native-webview";
@@ -158,6 +158,7 @@ function FileViewerModal({
   visible: boolean;
   onClose: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const [source, setSource] = useState<{ uri?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -177,15 +178,15 @@ function FileViewerModal({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#0A0A10" }}>
-        <View style={fvStyles.header}>
+      <View style={{ flex: 1, backgroundColor: "#0A0A10" }}>
+        <View style={[fvStyles.header, { paddingTop: insets.top + 10 }]}>
           <View style={fvStyles.headerLeft}>
             <Feather name="file-text" size={16} color={colors.accent.default} />
             <Text style={fvStyles.title} numberOfLines={1}>
               {name}
             </Text>
           </View>
-          <Pressable onPress={onClose} hitSlop={12} style={fvStyles.closeBtn}>
+          <Pressable onPress={onClose} hitSlop={16} style={fvStyles.closeBtn}>
             <Feather name="x" size={18} color="#fff" />
           </Pressable>
         </View>
@@ -224,7 +225,7 @@ function FileViewerModal({
             }}
           />
         )}
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
