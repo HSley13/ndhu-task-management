@@ -66,15 +66,19 @@ export function LocationReminderModal({
     if (!hasLocation || saving) return;
     setSaving(true);
     try {
-      const { status: bgStatus } =
-        await Location.requestBackgroundPermissionsAsync();
-      if (bgStatus !== "granted") {
-        Alert.alert(
-          "Background location needed",
-          Platform.OS === "ios"
-            ? 'Go to Settings → Privacy → Location Services → this app → "Always".'
-            : 'Go to Settings → App → Permissions → Location → "Allow all the time".',
-        );
+      try {
+        const { status: bgStatus } =
+          await Location.requestBackgroundPermissionsAsync();
+        if (bgStatus !== "granted") {
+          Alert.alert(
+            "Background location needed",
+            Platform.OS === "ios"
+              ? 'Go to Settings → Privacy → Location Services → this app → "Always".'
+              : 'Go to Settings → App → Permissions → Location → "Allow all the time".',
+          );
+        }
+      } catch {
+        // Permission API unavailable (e.g. simulator); proceed without check
       }
       await onAdd({
         label: stagedLabel || "Selected location",
