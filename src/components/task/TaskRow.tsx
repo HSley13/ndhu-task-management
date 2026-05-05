@@ -35,11 +35,9 @@ export function TaskRow({
   const overdue = isOverdue(task);
   const isDone = task.status === "done";
 
-  const borderColor = task.is_pinned
-    ? colors.accent.default
-    : overdue
-      ? colors.danger
-      : "transparent";
+  const borderColor = overdue
+    ? colors.danger
+    : labels[0]?.color ?? colors.accent.default;
 
   function handleLongPress() {
     haptics.medium();
@@ -146,8 +144,11 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.bg.base,
-    paddingHorizontal: spacing[4],
+    backgroundColor: colors.bg.elevated,
+    borderRadius: radius.md,
+    marginHorizontal: spacing[4],
+    marginBottom: spacing[2],
+    paddingHorizontal: spacing[3],
     paddingVertical: spacing[3],
     gap: spacing[3],
     borderLeftWidth: 3,
@@ -200,7 +201,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: radius.full,
-    backgroundColor: colors.bg.elevated,
+    backgroundColor: colors.bg.base,
   },
   labelChipDot: {
     width: 6,
