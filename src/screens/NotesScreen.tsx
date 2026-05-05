@@ -8,6 +8,7 @@ import {
   TextInput,
   Keyboard,
   LayoutAnimation,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -25,11 +26,14 @@ export function NotesScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<any>();
-  const { tasks, openTaskDetail, togglePin } = useTaskStore();
+  const { tasks, openTaskDetail, togglePin, deleteTask, bulkDelete } = useTaskStore();
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const searchInputRef = useRef<TextInput>(null);
+
+  const isSelecting = selectedIds.length > 0;
 
   useFocusEffect(
     useCallback(() => {
@@ -37,10 +41,25 @@ export function NotesScreen() {
       setSearchOpen(false);
       setSearch("");
       setSearchFocused(false);
+      setSelectedIds([]);
       Keyboard.dismiss();
       searchInputRef.current?.blur();
     }, []),
   );
+
+  function enterSelectMode(id: string) {
+    setSelectedIds([id]);
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  function exitSelect() {
+    setSelectedIds([]);
+  }
 
   function openSearch() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -82,7 +101,39 @@ export function NotesScreen() {
     navigation.navigate("NoteEditor", { taskId: item.id });
   }
 
+  function handleNoteLongPress(item: Task) {
+    enterSelectMode(item.id);
+  }
+
+  async function handleBulkPin() {
+    const selected = notes.filter((n) => selectedIds.includes(n.id));
+    const allPinned = selected.every((n) => n.is_pinned);
+    for (const note of selected) {
+      if (allPinned || !note.is_pinned) await togglePin(note.id);
+    }
+    exitSelect();
+  }
+
+  async function handleBulkDelete() {
+    Alert.alert(
+      `Delete ${selectedIds.length} note${selectedIds.length > 1 ? "s" : ""}?`,
+      "This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await bulkDelete(selectedIds);
+            exitSelect();
+          },
+        },
+      ],
+    );
+  }
+
   function renderNote({ item }: { item: Task }) {
+    const isSelected = selectedIds.includes(item.id);
     const preview = (item.note_content ?? "")
       .replace(/<[^>]*>/g, " ")
       .replace(/&nbsp;/g, " ")
@@ -90,14 +141,24 @@ export function NotesScreen() {
       .trim();
     return (
       <Pressable
-        style={[styles.card, item.is_pinned && styles.cardPinned]}
-        onPress={() => handleNotePress(item)}
-        onLongPress={() => togglePin(item.id)}
+        style={[
+          styles.card,
+          item.is_pinned && styles.cardPinned,
+          isSelecting && isSelected && styles.cardSelected,
+        ]}
+        onPress={() => (isSelecting ? toggleSelect(item.id) : handleNotePress(item))}
+        onLongPress={() => handleNoteLongPress(item)}
       >
-        {item.is_pinned && (
-          <View style={styles.pinBadge}>
-            <Feather name="bookmark" size={11} color={colors.accent.default} />
+        {isSelecting ? (
+          <View style={[styles.selectCircle, isSelected && styles.selectCircleOn]}>
+            {isSelected && <Feather name="check" size={12} color="#fff" />}
           </View>
+        ) : (
+          item.is_pinned && (
+            <View style={styles.pinBadge}>
+              <Feather name="bookmark" size={11} color={colors.accent.default} />
+            </View>
+          )
         )}
         <Text style={styles.noteTitle} numberOfLines={1}>
           {item.title}
@@ -189,12 +250,40 @@ export function NotesScreen() {
       )}
 
       {/* FAB */}
-      <Pressable
-        style={[styles.fab, { bottom: tabBarHeight + spacing[4] }]}
-        onPress={() => navigation.navigate("NoteEditor" as any)}
-      >
-        <Feather name="plus" size={28} color="#fff" />
-      </Pressable>
+      {!isSelecting && (
+        <Pressable
+          style={[styles.fab, { bottom: tabBarHeight + spacing[4] }]}
+          onPress={() => navigation.navigate("NoteEditor" as any)}
+        >
+          <Feather name="plus" size={28} color="#fff" />
+        </Pressable>
+      )}
+
+      {/* Bulk action bar */}
+      {isSelecting && (
+        <View style={[styles.bulkBar, { bottom: tabBarHeight }]}>
+          <Pressable style={styles.bulkDoneBtn} onPress={exitSelect}>
+            <Text style={styles.bulkCount}>{selectedIds.length} selected</Text>
+            <Text style={styles.bulkDoneText}>Done</Text>
+          </Pressable>
+          <View style={styles.bulkActions}>
+            <Pressable style={styles.bulkBtn} onPress={handleBulkPin}>
+              <Feather name="bookmark" size={20} color={colors.text.secondary} />
+              <Text style={styles.bulkBtnText}>
+                {notes
+                  .filter((n) => selectedIds.includes(n.id))
+                  .every((n) => n.is_pinned)
+                  ? "Unpin"
+                  : "Pin"}
+              </Text>
+            </Pressable>
+            <Pressable style={styles.bulkBtn} onPress={handleBulkDelete}>
+              <Feather name="trash-2" size={20} color={colors.danger} />
+              <Text style={[styles.bulkBtnText, { color: colors.danger }]}>Delete</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -290,6 +379,69 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.text.tertiary,
     marginTop: spacing[1],
+  },
+  cardSelected: {
+    borderColor: colors.accent.default,
+    backgroundColor: colors.accent.muted,
+  },
+  selectCircle: {
+    position: "absolute",
+    top: spacing[2],
+    right: spacing[2],
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.border.default,
+    backgroundColor: colors.bg.elevated,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectCircleOn: {
+    backgroundColor: colors.accent.default,
+    borderColor: colors.accent.default,
+  },
+  bulkBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    backgroundColor: colors.bg.elevated,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.subtle,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    gap: spacing[3],
+  },
+  bulkDoneBtn: {
+    flex: 1,
+    gap: 2,
+  },
+  bulkCount: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    fontWeight: "600",
+  },
+  bulkDoneText: {
+    fontSize: fontSize.sm,
+    color: colors.accent.default,
+    fontWeight: "700",
+  },
+  bulkActions: {
+    flexDirection: "row",
+    gap: spacing[2],
+  },
+  bulkBtn: {
+    alignItems: "center",
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    gap: 4,
+  },
+  bulkBtnText: {
+    fontSize: fontSize.xs,
+    color: colors.text.secondary,
+    fontWeight: "600",
   },
   fab: {
     position: "absolute",
