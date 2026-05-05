@@ -197,7 +197,6 @@ export function NoteEditorScreen() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      base64: true,
       quality: 0.7,
     });
     if (result.canceled) return;
@@ -205,9 +204,6 @@ export function NoteEditorScreen() {
     if (!asset) return;
     const ext = asset.uri.split(".").pop() ?? "jpg";
     const mime = `image/${ext === "png" ? "png" : "jpeg"}`;
-    sendToEditor("insert_image", {
-      src: `data:${mime};base64,${asset.base64}`,
-    });
     const attData = {
       uri: asset.uri,
       name: asset.fileName ?? `image.${ext}`,
@@ -229,15 +225,11 @@ export function NoteEditorScreen() {
     }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      base64: true,
       quality: 0.7,
     });
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset) return;
-    sendToEditor("insert_image", {
-      src: `data:image/jpeg;base64,${asset.base64}`,
-    });
     const attData = {
       uri: asset.uri,
       name: asset.fileName ?? "photo.jpg",
@@ -649,6 +641,7 @@ body{display:flex;flex-direction:column;color:#E2E2F0;font-family:-apple-system,
   border-top:1px solid #1E1E30;
   flex-shrink:0;
   overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
   -ms-overflow-style:none;
 }
@@ -695,17 +688,12 @@ body{display:flex;flex-direction:column;color:#E2E2F0;font-family:-apple-system,
 <body>
 <div id="scroll"><div id="editor" contenteditable="true" data-placeholder="Start writing…"></div></div>
 
-<!-- link modal overlay -->
-<div id="linkModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center">
-  <div style="background:#18182A;border-radius:14px;padding:18px 16px;width:88%;max-width:340px;box-shadow:0 8px 32px rgba(0,0,0,.6)">
-    <p style="font-size:12px;font-weight:700;color:#6868A8;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px">Insert link</p>
-    <input id="linkText" placeholder="Display text" style="width:100%;background:#0C0C15;color:#E2E2F0;border:1px solid #2E2E48;border-radius:8px;padding:9px 12px;font-size:14px;font-family:inherit;margin-bottom:8px;outline:none"/>
-    <input id="linkUrl" placeholder="https://…" type="url" style="width:100%;background:#0C0C15;color:#E2E2F0;border:1px solid #2E2E48;border-radius:8px;padding:9px 12px;font-size:14px;font-family:inherit;outline:none"/>
-    <div style="display:flex;gap:8px;margin-top:14px">
-      <button id="linkCancel" class="b" style="flex:1;height:38px;background:#0C0C15;border-radius:8px;font-size:13px">Cancel</button>
-      <button id="linkOk" class="b" style="flex:1;height:38px;background:#8C7DFF;border-radius:8px;font-size:13px;color:#fff;font-weight:700">Insert</button>
-    </div>
-  </div>
+<!-- inline link panel – lives in normal flow above the toolbar -->
+<div id="linkPanel" style="display:none;flex-direction:row;align-items:center;gap:6px;padding:8px 10px;background:#18182A;border-top:1px solid #1E1E30;flex-shrink:0">
+  <input id="linkText" placeholder="Display text" style="flex:1;min-width:0;background:#0C0C15;color:#E2E2F0;border:1px solid #2E2E48;border-radius:7px;padding:7px 9px;font-size:13px;font-family:inherit;outline:none"/>
+  <input id="linkUrl" placeholder="https://…" type="url" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="flex:1.5;min-width:0;background:#0C0C15;color:#E2E2F0;border:1px solid #2E2E48;border-radius:7px;padding:7px 9px;font-size:13px;font-family:inherit;outline:none"/>
+  <button id="linkOk" style="flex-shrink:0;background:#8C7DFF;border:none;border-radius:7px;color:#fff;font-size:13px;font-weight:700;padding:7px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit">Add</button>
+  <button id="linkCancel" style="flex-shrink:0;background:transparent;border:1px solid #2E2E48;border-radius:7px;color:#888;font-size:18px;line-height:1;padding:5px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;font-family:inherit">✕</button>
 </div>
 
 <div id="tb">
@@ -790,22 +778,44 @@ function cmd(c,v){
   emit();
 }
 
+function getCurrentBlock(){
+  var sel=window.getSelection();
+  if(!sel||sel.rangeCount===0)return '';
+  var node=sel.getRangeAt(0).startContainer;
+  while(node&&node!==ed){
+    var nn=node.nodeName.toLowerCase();
+    if(['h1','h2','h3','p','div','blockquote'].indexOf(nn)!==-1)return nn;
+    node=node.parentNode;
+  }
+  return '';
+}
+
 function formatBlock(tag){
   restoreSelection();
   var sel=window.getSelection();
-  if(sel&&sel.rangeCount>0){
-    var node=sel.getRangeAt(0).startContainer;
-    while(node&&node!==ed){
-      if(node.nodeName&&node.nodeName.toLowerCase()===tag.toLowerCase()){
-        document.execCommand('formatBlock',false,'p');
-        emit();return;
-      }
-      node=node.parentNode;
-    }
+  if(!sel||sel.rangeCount===0){
+    document.execCommand('formatBlock',false,'<'+tag+'>');
+    emit();return;
   }
-  document.execCommand('formatBlock',false,'<'+tag+'>');
-  savedRange=null;
-  emit();
+  var range=sel.getRangeAt(0);
+  var node=range.commonAncestorContainer;
+  while(node&&node!==ed){
+    var nn=node.nodeName.toLowerCase();
+    if(['p','div','h1','h2','h3','blockquote'].indexOf(nn)!==-1)break;
+    node=node.parentNode;
+  }
+  if(!node||node===ed){
+    document.execCommand('formatBlock',false,'<'+tag+'>');
+    savedRange=null;emit();return;
+  }
+  var newTag=(node.nodeName.toLowerCase()===tag.toLowerCase())?'p':tag.toLowerCase();
+  var newEl=document.createElement(newTag);
+  while(node.firstChild)newEl.appendChild(node.firstChild);
+  node.parentNode.replaceChild(newEl,node);
+  var r=document.createRange();
+  r.selectNodeContents(newEl);r.collapse(false);
+  sel.removeAllRanges();sel.addRange(r);
+  savedRange=null;emit();
 }
 
 function updateToolbar(){
@@ -814,17 +824,40 @@ function updateToolbar(){
     var el=document.getElementById(id);
     if(el)el.classList.toggle('on',document.queryCommandState(btns[id]));
   });
-  var hState=document.queryCommandValue('formatBlock').toLowerCase();
+  var hState=getCurrentBlock();
   ['H1','H2','H3'].forEach(function(h){
     var el=document.getElementById('b'+h);
     if(el)el.classList.toggle('on',hState===h.toLowerCase());
   });
+  var bqEl=document.getElementById('bBQ');
+  if(bqEl)bqEl.classList.toggle('on',hState==='blockquote');
+  // list state
+  var ulEl=document.getElementById('bUL');
+  if(ulEl)ulEl.classList.toggle('on',document.queryCommandState('insertUnorderedList'));
+  var olEl=document.getElementById('bOL');
+  if(olEl)olEl.classList.toggle('on',document.queryCommandState('insertOrderedList'));
   // align state
   var alMap={bAL:'justifyLeft',bAC:'justifyCenter',bAR:'justifyRight'};
   Object.keys(alMap).forEach(function(id){
     var el=document.getElementById(id);
     if(el)el.classList.toggle('on',document.queryCommandState(alMap[id]));
   });
+  // mark / code active state
+  var sel=window.getSelection();
+  var inMark=false,inCode=false;
+  if(sel&&sel.rangeCount>0){
+    var nd=sel.getRangeAt(0).startContainer;
+    while(nd&&nd!==ed){
+      var tn=nd.nodeName.toUpperCase();
+      if(tn==='MARK')inMark=true;
+      if(tn==='CODE')inCode=true;
+      nd=nd.parentNode;
+    }
+  }
+  var hlEl=document.getElementById('bHL');
+  if(hlEl)hlEl.classList.toggle('on',inMark);
+  var coEl=document.getElementById('bCO');
+  if(coEl)coEl.classList.toggle('on',inCode);
 }
 
 function tb(id,fn){
@@ -836,36 +869,35 @@ function tb(id,fn){
   el.addEventListener('click',function(e){e.preventDefault();fn();},false);
 }
 
-// ── Link modal ────────────────────────────────────────────────────────────
-var linkModal=document.getElementById('linkModal');
-var linkText=document.getElementById('linkText');
-var linkUrl=document.getElementById('linkUrl');
-
+// ── Link panel (inline, no fixed positioning) ─────────────────────────────
 function openLinkModal(){
   var sel=window.getSelection();
   if(sel&&sel.rangeCount>0){savedRange=sel.getRangeAt(0).cloneRange();}
-  // pre-fill text from selection
   var selText=sel?sel.toString():'';
-  linkText.value=selText;
-  linkUrl.value='https://';
-  linkModal.style.display='flex';
-  setTimeout(function(){linkUrl.focus();linkUrl.setSelectionRange(8,8);},50);
+  document.getElementById('linkText').value=selText;
+  document.getElementById('linkUrl').value='https://';
+  document.getElementById('linkPanel').style.display='flex';
+  setTimeout(function(){
+    var u=document.getElementById('linkUrl');
+    u.focus();try{u.setSelectionRange(8,8);}catch(e){}
+  },80);
 }
 
 function closeLinkModal(){
-  linkModal.style.display='none';
-  linkText.value='';
-  linkUrl.value='';
+  document.getElementById('linkPanel').style.display='none';
+  document.getElementById('linkText').value='';
+  document.getElementById('linkUrl').value='';
 }
 
+document.getElementById('linkCancel').addEventListener('mousedown',function(e){e.preventDefault();});
 document.getElementById('linkCancel').addEventListener('click',closeLinkModal);
+document.getElementById('linkOk').addEventListener('mousedown',function(e){e.preventDefault();});
 document.getElementById('linkOk').addEventListener('click',function(){
-  var url=linkUrl.value.trim();
-  var txt=linkText.value.trim();
+  var url=document.getElementById('linkUrl').value.trim();
+  var txt=document.getElementById('linkText').value.trim();
   if(!url||url==='https://')return;
   restoreSelection();
   if(txt){
-    // Insert as anchor HTML so we control both text and href
     document.execCommand('insertHTML',false,'<a href="'+url+'">'+txt+'</a>');
   } else {
     document.execCommand('createLink',false,url);
@@ -874,8 +906,6 @@ document.getElementById('linkOk').addEventListener('click',function(){
   emit();
   closeLinkModal();
 });
-// Close on backdrop tap
-linkModal.addEventListener('click',function(e){if(e.target===linkModal)closeLinkModal();});
 
 // ── Highlight (yellow mark) ───────────────────────────────────────────────
 function toggleHighlight(){
@@ -939,6 +969,13 @@ ed.addEventListener('input',function(){
 ed.addEventListener('keyup',updateToolbar);
 ed.addEventListener('mouseup',updateToolbar);
 ed.addEventListener('touchend',function(){setTimeout(updateToolbar,10);});
+document.addEventListener('selectionchange',function(){
+  var sel=window.getSelection();
+  if(!sel||sel.rangeCount===0)return;
+  var n=sel.getRangeAt(0).startContainer;
+  while(n&&n!==ed)n=n.parentNode;
+  if(n===ed)updateToolbar();
+});
 
 window.addEventListener('message',function(e){
   var d;try{d=JSON.parse(e.data);}catch(err){return;}
