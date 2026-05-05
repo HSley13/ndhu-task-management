@@ -86,12 +86,9 @@ export function TaskDetailSheet({
   const [editingCourse, setEditingCourse] = useState(false);
   const [dueDateVal, setDueDateVal] = useState<Date | null>(null);
   const [dueTimeVal, setDueTimeVal] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-
-  const [showReminderModal, setShowReminderModal] = useState(false);
-  const [showLabelModal, setShowLabelModal] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [activePanel, setActivePanel] = useState<
+    "date" | "time" | "reminder" | "label" | "location" | null
+  >(null);
 
   async function pickImage() {
     if (Platform.OS !== "web") {
@@ -178,11 +175,7 @@ export function TaskDetailSheet({
       );
     }
     setEditingCourse(false);
-    setShowDatePicker(false);
-    setShowTimePicker(false);
-    setShowReminderModal(false);
-    setShowLabelModal(false);
-    setShowLocationModal(false);
+    setActivePanel(null);
   }, [task?.id]);
 
   const renderBackdrop = useCallback(
@@ -306,7 +299,13 @@ export function TaskDetailSheet({
         </View>
 
         {/* Meta row: tappable course + date/time + source */}
-        <View style={styles.metaRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.metaRow}
+          contentContainerStyle={styles.metaRowContent}
+          keyboardShouldPersistTaps="handled"
+        >
           {editingCourse ? (
             <TextInput
               value={courseVal}
@@ -336,7 +335,7 @@ export function TaskDetailSheet({
           {/* Due date pill — always tappable */}
           <Pressable
             style={[styles.metaChip, dueDateVal && styles.metaChipActive]}
-            onPress={() => setShowDatePicker(true)}
+            onPress={() => setActivePanel("date")}
           >
             <Feather
               name="calendar"
@@ -367,7 +366,7 @@ export function TaskDetailSheet({
           {dueDateVal && (
             <Pressable
               style={[styles.metaChip, dueTimeVal && styles.metaChipActive]}
-              onPress={() => setShowTimePicker(true)}
+              onPress={() => setActivePanel("time")}
             >
               <Feather
                 name="clock"
@@ -416,7 +415,7 @@ export function TaskDetailSheet({
                 styles.metaChip,
                 activeReminderOffsets.length > 0 && styles.metaChipActive,
               ]}
-              onPress={() => setShowReminderModal(true)}
+              onPress={() => setActivePanel("reminder")}
             >
               <Feather
                 name="bell"
@@ -450,7 +449,7 @@ export function TaskDetailSheet({
               styles.metaChip,
               taskLabels.length > 0 && styles.metaChipActive,
             ]}
-            onPress={() => setShowLabelModal(true)}
+            onPress={() => setActivePanel("label")}
           >
             <Feather
               name="tag"
@@ -476,7 +475,7 @@ export function TaskDetailSheet({
               (task?.location_reminders?.length ?? 0) > 0 &&
                 styles.metaChipActive,
             ]}
-            onPress={() => setShowLocationModal(true)}
+            onPress={() => setActivePanel("location")}
           >
             <Feather
               name="map-pin"
@@ -502,12 +501,12 @@ export function TaskDetailSheet({
                 : "Location"}
             </Text>
           </Pressable>
-        </View>
+        </ScrollView>
 
         {dueDateVal && (
           <ReminderPickerModal
-            visible={showReminderModal}
-            onClose={() => setShowReminderModal(false)}
+            visible={activePanel === "reminder"}
+            onClose={() => setActivePanel(null)}
             activeOffsets={activeReminderOffsets}
             onToggleOffset={handleToggleOffset}
             onAddCustom={handleAddCustom}
@@ -516,33 +515,33 @@ export function TaskDetailSheet({
         )}
 
         <LocationReminderModal
-          visible={showLocationModal}
-          onClose={() => setShowLocationModal(false)}
+          visible={activePanel === "location"}
+          onClose={() => setActivePanel(null)}
           locationReminders={task?.location_reminders ?? []}
           onAdd={(data) => addLocationReminder(task!.id, data)}
           onDelete={deleteLocationReminder}
         />
 
         {/* Date/time pickers */}
-        {showDatePicker && Platform.OS !== "web" && (
+        {activePanel === "date" && Platform.OS !== "web" && (
           <NativeDatePicker
             value={dueDateVal ?? new Date()}
             mode="date"
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={(_: any, d?: Date) => {
-              setShowDatePicker(false);
+              setActivePanel(null);
               if (d) saveDueDate(d);
             }}
             textColor="#FFFFFF"
           />
         )}
-        {showDatePicker &&
+        {activePanel === "date" &&
           Platform.OS === "web" &&
           React.createElement("input", {
             type: "date",
             value: dueDateVal ? format(dueDateVal, "yyyy-MM-dd") : "",
             onChange: (e: any) => {
-              setShowDatePicker(false);
+              setActivePanel(null);
               if (e.target.value) saveDueDate(parseISO(e.target.value));
             },
             style: {
@@ -559,25 +558,25 @@ export function TaskDetailSheet({
               fontFamily: "inherit",
             },
           })}
-        {showTimePicker && Platform.OS !== "web" && (
+        {activePanel === "time" && Platform.OS !== "web" && (
           <NativeDatePicker
             value={dueTimeVal ?? new Date()}
             mode="time"
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={(_: any, d?: Date) => {
-              setShowTimePicker(false);
+              setActivePanel(null);
               if (d) saveDueTime(d);
             }}
             textColor="#FFFFFF"
           />
         )}
-        {showTimePicker &&
+        {activePanel === "time" &&
           Platform.OS === "web" &&
           React.createElement("input", {
             type: "time",
             value: dueTimeVal ? format(dueTimeVal, "HH:mm") : "",
             onChange: (e: any) => {
-              setShowTimePicker(false);
+              setActivePanel(null);
               if (e.target.value) {
                 const d = dueDateVal ? new Date(dueDateVal) : new Date();
                 const [h, m] = e.target.value.split(":").map(Number);
@@ -711,8 +710,8 @@ export function TaskDetailSheet({
         <Divider />
 
         <LabelPickerModal
-          visible={showLabelModal}
-          onClose={() => setShowLabelModal(false)}
+          visible={activePanel === "label"}
+          onClose={() => setActivePanel(null)}
           selectedIds={taskLabels.map((l) => l.id)}
           onApply={async (ids) => {
             if (task) await useTaskStore.getState().setTaskLabels(task.id, ids);
@@ -821,10 +820,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing[2],
   },
   metaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing[2],
     paddingBottom: spacing[3],
+  },
+  metaRowContent: {
+    flexDirection: "row",
+    gap: spacing[2],
     alignItems: "center",
   },
   metaChip: {
@@ -851,7 +851,7 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
   courseInlineInput: {
-    flex: 1,
+    width: 180,
     fontSize: fontSize.xs,
     color: colors.text.primary,
     backgroundColor: colors.bg.elevated,

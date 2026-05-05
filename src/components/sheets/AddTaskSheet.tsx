@@ -65,8 +65,9 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
   const [course, setCourse] = useState("");
   const [dueDate, setDueDate] = useState<Date | null>(null);
   const [dueTime, setDueTime] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [activePanel, setActivePanel] = useState<
+    "date" | "time" | "reminder" | "label" | "location" | "recur" | null
+  >(null);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [pendingReminderOffsets, setPendingReminderOffsets] = useState<
     number[]
@@ -74,10 +75,6 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
   const [pendingLocationReminders, setPendingLocationReminders] = useState<
     LocationReminder[]
   >([]);
-  const [showReminderModal, setShowReminderModal] = useState(false);
-  const [showLabelModal, setShowLabelModal] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(false);
-  const [showRecurModal, setShowRecurModal] = useState(false);
   const [recurRule, setRecurRule] = useState<SimpleRecurRule | null>(null);
   const [recurDates, setRecurDates] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -115,10 +112,7 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
     setSelectedLabels([]);
     setPendingReminderOffsets([]);
     setPendingLocationReminders([]);
-    setShowReminderModal(false);
-    setShowLabelModal(false);
-    setShowLocationModal(false);
-    setShowRecurModal(false);
+    setActivePanel(null);
     setRecurRule(null);
     setRecurDates([]);
     setLoading(false);
@@ -285,7 +279,13 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
             </View>
           )}
           {/* Attach buttons row */}
-          <View style={styles.descAttRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            style={styles.descAttRowScroll}
+            contentContainerStyle={styles.descAttRow}
+          >
             <Pressable
               style={styles.descAttBtn}
               onPress={pickImage}
@@ -305,7 +305,7 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
                 styles.descAttBtn,
                 selectedLabels.length > 0 && styles.descAttBtnActive,
               ]}
-              onPress={() => setShowLabelModal(true)}
+              onPress={() => setActivePanel("label")}
               hitSlop={6}
             >
               <Feather
@@ -336,7 +336,7 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
                 {pendingAttachments.length} attached
               </Text>
             )}
-          </View>
+          </ScrollView>
         </View>
 
         <TextInput
@@ -352,7 +352,7 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
         <View style={styles.dateRow}>
           <Pressable
             style={styles.datePill}
-            onPress={() => setShowDatePicker(true)}
+            onPress={() => setActivePanel("date")}
           >
             <Feather
               name="calendar"
@@ -372,7 +372,7 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
           {dueDate && (
             <Pressable
               style={styles.datePill}
-              onPress={() => setShowTimePicker(true)}
+              onPress={() => setActivePanel("time")}
             >
               <Feather
                 name="clock"
@@ -397,7 +397,7 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
                 styles.datePill,
                 pendingReminderOffsets.length > 0 && styles.datePillActive,
               ]}
-              onPress={() => setShowReminderModal(true)}
+              onPress={() => setActivePanel("reminder")}
             >
               <Feather
                 name="bell"
@@ -429,7 +429,7 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
               styles.datePill,
               pendingLocationReminders.length > 0 && styles.datePillActive,
             ]}
-            onPress={() => setShowLocationModal(true)}
+            onPress={() => setActivePanel("location")}
           >
             <Feather
               name="map-pin"
@@ -496,7 +496,7 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
                 styles.datePill,
                 recurDates.length > 0 && styles.datePillActive,
               ]}
-              onPress={() => setShowRecurModal(true)}
+              onPress={() => setActivePanel("recur")}
             >
               <Feather
                 name="calendar"
@@ -536,26 +536,26 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
           </View>
         )}
 
-        {showDatePicker && Platform.OS !== "web" && (
+        {activePanel === "date" && Platform.OS !== "web" && (
           <NativeDatePicker
             value={dueDate ?? new Date()}
             mode="date"
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={(_: any, d?: Date) => {
-              setShowDatePicker(false);
+              setActivePanel(null);
               if (d) setDueDate(d);
             }}
             minimumDate={new Date()}
             textColor="#FFFFFF"
           />
         )}
-        {showDatePicker &&
+        {activePanel === "date" &&
           Platform.OS === "web" &&
           React.createElement("input", {
             type: "date",
             value: dueDate ? format(dueDate, "yyyy-MM-dd") : "",
             onChange: (e: any) => {
-              setShowDatePicker(false);
+              setActivePanel(null);
               if (e.target.value) setDueDate(parseISO(e.target.value));
             },
             style: {
@@ -572,25 +572,25 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
               fontFamily: "inherit",
             },
           })}
-        {showTimePicker && Platform.OS !== "web" && (
+        {activePanel === "time" && Platform.OS !== "web" && (
           <NativeDatePicker
             value={dueTime ?? new Date()}
             mode="time"
             display={Platform.OS === "ios" ? "spinner" : "default"}
             onChange={(_: any, d?: Date) => {
-              setShowTimePicker(false);
+              setActivePanel(null);
               if (d) setDueTime(d);
             }}
             textColor="#FFFFFF"
           />
         )}
-        {showTimePicker &&
+        {activePanel === "time" &&
           Platform.OS === "web" &&
           React.createElement("input", {
             type: "time",
             value: dueTime ? format(dueTime, "HH:mm") : "",
             onChange: (e: any) => {
-              setShowTimePicker(false);
+              setActivePanel(null);
               if (e.target.value) {
                 const d = dueDate ? new Date(dueDate) : new Date();
                 const [h, m] = e.target.value.split(":").map(Number);
@@ -616,8 +616,8 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
         {/* Reminder picker modal */}
         {dueDate && (
           <ReminderPickerModal
-            visible={showReminderModal}
-            onClose={() => setShowReminderModal(false)}
+            visible={activePanel === "reminder"}
+            onClose={() => setActivePanel(null)}
             activeOffsets={pendingReminderOffsets}
             onToggleOffset={(offset) =>
               setPendingReminderOffsets((prev) =>
@@ -640,15 +640,15 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
         )}
 
         <LabelPickerModal
-          visible={showLabelModal}
-          onClose={() => setShowLabelModal(false)}
+          visible={activePanel === "label"}
+          onClose={() => setActivePanel(null)}
           selectedIds={selectedLabels}
           onApply={(ids) => setSelectedLabels(ids)}
         />
 
         <LocationReminderModal
-          visible={showLocationModal}
-          onClose={() => setShowLocationModal(false)}
+          visible={activePanel === "location"}
+          onClose={() => setActivePanel(null)}
           locationReminders={pendingLocationReminders}
           onAdd={async (data) => {
             setPendingLocationReminders((prev) => [
@@ -664,8 +664,8 @@ export function AddTaskSheet({ sheetRef, initialDate }: AddTaskSheetProps) {
         />
 
         <RecurDatePickerModal
-          visible={showRecurModal}
-          onClose={() => setShowRecurModal(false)}
+          visible={activePanel === "recur"}
+          onClose={() => setActivePanel(null)}
           onConfirm={(dates) => setRecurDates(dates)}
           initialDates={recurDates}
         />
@@ -743,12 +743,14 @@ const styles = StyleSheet.create({
     gap: spacing[2],
     paddingBottom: spacing[2],
   },
+  descAttRowScroll: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border.subtle,
+  },
   descAttRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing[1],
-    borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
   },
