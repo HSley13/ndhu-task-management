@@ -3,6 +3,7 @@ import {
   View,
   Text,
   SectionList,
+  FlatList,
   StyleSheet,
   Pressable,
   TextInput,
@@ -32,6 +33,7 @@ import { AddTaskSheet } from "../components/sheets/AddTaskSheet";
 import { PostponeSheet } from "../components/sheets/PostponeSheet";
 import { LabelPickerModal } from "../components/ui/LabelPickerModal";
 import { groupTasksBySection } from "../utils/date";
+import { computeUrgencyScore } from "../utils/urgency";
 import type { Task } from "../types";
 import type { ListStackParamList } from "../navigation/types";
 
@@ -52,6 +54,7 @@ export function ListScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showBulkLabelModal, setShowBulkLabelModal] = useState(false);
   const [showBulkPostpone, setShowBulkPostpone] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const isSelecting = selectedIds.length > 0;
   const searchInputRef = useRef<TextInput>(null);
 
@@ -100,6 +103,7 @@ export function ListScreen() {
       setSearch("");
       setSearchFocused(false);
       setSelectedIds([]);
+      setFocusMode(false);
       Keyboard.dismiss();
       searchInputRef.current?.blur();
     }, []),
@@ -147,6 +151,15 @@ export function ListScreen() {
       ? [{ title: "pinned", data: pinned }, ...dateSections]
       : dateSections;
   }, [filteredTasks]);
+
+  const focusTasks = useMemo(() => {
+    if (!focusMode) return [];
+    return [...nonNoteTasks]
+      .filter((t) => t.status !== "done")
+      .map((t) => ({ task: t, score: computeUrgencyScore(t) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+  }, [focusMode, nonNoteTasks]);
 
   const { openTaskDetail } = useTaskStore();
 
@@ -211,6 +224,17 @@ export function ListScreen() {
             <Pressable onPress={openSearch} hitSlop={8}>
               <Feather name="search" size={22} color={colors.text.secondary} />
             </Pressable>
+            <Pressable
+              onPress={() => setFocusMode((v) => !v)}
+              hitSlop={8}
+              style={focusMode ? styles.focusBtnOn : undefined}
+            >
+              <Feather
+                name="zap"
+                size={22}
+                color={focusMode ? colors.accent.default : colors.text.secondary}
+              />
+            </Pressable>
           </>
         ) : (
           <>
@@ -254,7 +278,39 @@ export function ListScreen() {
       </View>
 
       {/* List */}
-      {filteredTasks.length === 0 ? (
+      {focusMode ? (
+        <FlatList
+          data={focusTasks}
+          keyExtractor={(item) => item.task.id}
+          renderItem={({ item }) => (
+            <TaskRow
+              task={item.task}
+              labels={[]}
+              onPress={() => handleTaskPress(item.task)}
+              onPostpone={() => handlePostpone(item.task.id)}
+              isSelecting={isSelecting}
+              selected={selectedIds.includes(item.task.id)}
+              onSelect={() => toggleSelect(item.task.id)}
+              onEnterSelectMode={() => enterSelectMode(item.task.id)}
+              urgencyScore={item.score}
+            />
+          )}
+          ListHeaderComponent={
+            <View style={styles.focusHeader}>
+              <Feather name="zap" size={14} color={colors.accent.default} />
+              <Text style={styles.focusHeaderText}>
+                Focus — {focusTasks.length} tasks ranked by urgency
+              </Text>
+            </View>
+          }
+          ListEmptyComponent={
+            <EmptyState illustration="done" title="All done!" subtitle="No pending tasks." />
+          }
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + spacing[8] }]}
+        />
+      ) : filteredTasks.length === 0 ? (
         search ? (
           <EmptyState
             illustration="search"
@@ -498,6 +554,23 @@ const styles = StyleSheet.create({
   bulkBtnText: {
     fontSize: fontSize.xs,
     color: colors.text.secondary,
+    fontWeight: "600",
+  },
+  focusBtnOn: {
+    backgroundColor: colors.accent.soft,
+    borderRadius: radius.sm,
+    padding: 3,
+  },
+  focusHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+  },
+  focusHeaderText: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
     fontWeight: "600",
   },
 });

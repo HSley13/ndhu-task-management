@@ -8,6 +8,7 @@ import { useTaskStore } from "../../store/useTaskStore";
 import { useHaptics } from "../../hooks/useHaptics";
 import { formatRelativeDue, isOverdue } from "../../utils/date";
 import type { Task, Label } from "../../types";
+import { urgencyLevel, URGENCY_COLOR, URGENCY_LABEL } from "../../utils/urgency";
 
 interface TaskRowProps {
   task: Task;
@@ -18,6 +19,7 @@ interface TaskRowProps {
   selected?: boolean;
   onSelect?: () => void;
   onEnterSelectMode?: () => void;
+  urgencyScore?: number;
 }
 
 export function TaskRow({
@@ -29,10 +31,12 @@ export function TaskRow({
   selected = false,
   onSelect,
   onEnterSelectMode,
+  urgencyScore,
 }: TaskRowProps) {
   const { toggleDone, togglePin, deleteTask } = useTaskStore();
   const haptics = useHaptics();
   const overdue = isOverdue(task);
+  const uLevel = urgencyScore !== undefined ? urgencyLevel(urgencyScore) : null;
   const isDone = task.status === "done";
 
   const borderColor = overdue
@@ -135,6 +139,13 @@ export function TaskRow({
         {task.moodle_url && (
           <Feather name="link" size={12} color={colors.text.tertiary} />
         )}
+        {uLevel && (
+          <View style={[styles.urgencyBadge, { borderColor: URGENCY_COLOR[uLevel] }]}>
+            <Text style={[styles.urgencyText, { color: URGENCY_COLOR[uLevel] }]}>
+              {URGENCY_LABEL[uLevel]}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -187,6 +198,17 @@ const styles = StyleSheet.create({
   },
   dueTextOverdue: {
     color: colors.danger,
+  },
+  urgencyBadge: {
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  urgencyText: {
+    fontSize: 10,
+    fontWeight: "700",
+    textAlign: "right",
   },
   labelsRow: {
     flexDirection: "row",

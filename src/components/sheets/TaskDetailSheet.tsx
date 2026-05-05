@@ -79,6 +79,7 @@ export function TaskDetailSheet({
   const snapPoints = useMemo(() => ["60%", "90%"], []);
 
   const [newSubtask, setNewSubtask] = useState("");
+  const [effortVal, setEffortVal] = useState<number>(2);
 
   // Inline-editable fields — auto-save on blur / immediate on picker confirm
   const [titleVal, setTitleVal] = useState("");
@@ -174,6 +175,7 @@ export function TaskDetailSheet({
         task.due_time ? parseISO(`2000-01-01T${task.due_time}`) : null,
       );
     }
+    setEffortVal(task?.effort ?? 2);
     setEditingCourse(false);
     setActivePanel(null);
   }, [task?.id]);
@@ -502,6 +504,26 @@ export function TaskDetailSheet({
             </Text>
           </Pressable>
         </ScrollView>
+
+        {/* Effort picker */}
+        <View style={styles.effortRow}>
+          <Feather name="zap" size={13} color={colors.text.tertiary} />
+          <Text style={styles.effortLabel}>Effort</Text>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Pressable
+              key={n}
+              style={[styles.effortBtn, effortVal === n && styles.effortBtnOn]}
+              onPress={async () => {
+                setEffortVal(n);
+                if (task) await updateTask(task.id, { effort: n });
+              }}
+            >
+              <Text style={[styles.effortBtnText, effortVal === n && styles.effortBtnTextOn]}>
+                {n}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
 
         {dueDateVal && (
           <ReminderPickerModal
@@ -860,6 +882,39 @@ const styles = StyleSheet.create({
     borderColor: colors.accent.muted,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[1],
+  },
+  effortRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[2],
+  },
+  effortLabel: {
+    fontSize: fontSize.xs,
+    color: colors.text.tertiary,
+    marginRight: 4,
+  },
+  effortBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.border.default,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  effortBtnOn: {
+    backgroundColor: colors.accent.default,
+    borderColor: colors.accent.default,
+  },
+  effortBtnText: {
+    fontSize: fontSize.xs,
+    fontWeight: "700",
+    color: colors.text.tertiary,
+  },
+  effortBtnTextOn: {
+    color: "#fff",
   },
   section: {
     paddingVertical: spacing[3],
